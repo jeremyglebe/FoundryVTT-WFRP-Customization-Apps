@@ -3809,9 +3809,9 @@ var Uc = Js("npc-builder", () => {
 	}), D = Y(() => {
 		let e = /* @__PURE__ */ new Map();
 		for (let t of r.value.advancements) {
-			if (!Lc(t.kind, d.value)) continue;
 			let n = Pc(t.kind, t.name);
 			e.set(n, {
+				baseAdvances: t.baseAdvances,
 				baseValue: t.current,
 				careerValue: 0,
 				current: 0,
@@ -3822,7 +3822,7 @@ var Uc = Js("npc-builder", () => {
 				sources: []
 			});
 		}
-		return se(e, "characteristic"), se(e, "skill"), se(e, "talent"), [...e.values()].map((e) => {
+		return se(e, "characteristic"), se(e, "skill"), se(e, "talent"), [...e.values()].filter((e) => e.includedFromCareer || Lc(e.kind, d.value)).map((e) => {
 			let t = Pc(e.kind, e.name), r = n.value[t] ?? e.careerValue;
 			return {
 				...e,
@@ -4011,6 +4011,7 @@ var Uc = Js("npc-builder", () => {
 			return;
 		}
 		e.set(n, {
+			baseAdvances: 0,
 			baseValue: 0,
 			careerValue: t.careerValue,
 			current: t.careerValue,
@@ -6643,7 +6644,7 @@ async function xm(e, t) {
 	for (let a of t) {
 		let t = Math.max(0, Math.floor(a.current));
 		if (t <= 0) continue;
-		let o = a.baseValue + t;
+		let o = a.baseAdvances + t;
 		if (a.kind === "characteristic") {
 			wm(n, a, o);
 			continue;
@@ -6677,9 +6678,44 @@ function Sm(e) {
 			"characteristics",
 			n,
 			"advances"
-		]]);
+		]]), a = Ep(e.system, [
+			[
+				"characteristics",
+				n,
+				"value",
+				"value"
+			],
+			[
+				"characteristics",
+				n,
+				"value"
+			],
+			[
+				"characteristics",
+				n,
+				"total",
+				"value"
+			],
+			[
+				"characteristics",
+				n,
+				"total"
+			],
+			[
+				"characteristics",
+				n,
+				"initial",
+				"value"
+			],
+			[
+				"characteristics",
+				n,
+				"initial"
+			]
+		], i);
 		t.push({
-			current: i,
+			baseAdvances: i,
+			current: a,
 			kind: "characteristic",
 			name: r
 		});
@@ -6688,6 +6724,7 @@ function Sm(e) {
 }
 function Cm(e, t) {
 	return e.items?.contents.filter((e) => e.type === t).map((e) => ({
+		baseAdvances: Ep(e.system, [["advances", "value"], ["advances"]]),
 		current: Ep(e.system, [["advances", "value"], ["advances"]]),
 		kind: t,
 		name: e.name
