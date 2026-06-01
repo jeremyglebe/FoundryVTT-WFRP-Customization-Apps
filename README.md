@@ -22,13 +22,13 @@ https://github.com/jeremyglebe/FoundryVTT-WFRP-Customization-Apps/releases/lates
 Create a Foundry script macro with:
 
 ```js
-game.modules.get('wfrp4e-customizer-apps').api.openNpcBuilder()
+game.modules.get("wfrp4e-customizer-apps").api.openNpcBuilder();
 ```
 
 The workbench can also be opened with:
 
 ```js
-game.modules.get('wfrp4e-customizer-apps').api.openWorkbench()
+game.modules.get("wfrp4e-customizer-apps").api.openWorkbench();
 ```
 
 ## Compatibility
