@@ -12467,60 +12467,105 @@ function eT(e) {
 }
 //#endregion
 //#region src/module/apps/species-builder/chargen-roll-swap-guard.ts
-var tT = Symbol("wfrp4e-customizer-guarded-attributes-stage");
-function nT() {
+var tT = Symbol("wfrp4e-customizer-guarded-attributes-stage"), nT = "wfrp4e-customizer-chargen-roll--compatible", rT = "wfrp4e-customizer-chargen-roll--dragging", iT = "wfrp4e-customizer-chargen-roll--incompatible", aT = [
+	nT,
+	rT,
+	iT
+];
+function oT() {
 	Hooks.on("wfrp4e:chargen", (e) => {
-		rT(e);
+		sT(e);
 	});
 }
-function rT(n) {
-	let r = iT(n);
+function sT(n) {
+	let r = cT(n);
 	if (!r) {
 		t(`${$} | Could not inspect WFRP character generation stages.`);
 		return;
 	}
-	let i = aT(r);
+	let i = lT(r);
 	if (!i) {
 		t(`${$} | Could not find the WFRP Attributes character generation stage.`);
 		return;
 	}
-	if (oT(i.class)) return;
-	let a = sT(i.class);
+	if (uT(i.class)) return;
+	let a = dT(i.class);
 	typeof r.replaceStage == "function" ? r.replaceStage("attributes", a) : i.class = a, e(`${$} | Guarded WFRP characteristic roll swapping for custom species.`);
 }
-function iT(e) {
+function cT(e) {
 	if (!J(e)) return;
 	let t = {}, n = e.replaceStage;
 	return typeof n == "function" && (t.replaceStage = (t, r) => {
 		n.call(e, t, r);
 	}), Array.isArray(e.stages) && (t.stages = e.stages), t;
 }
-function aT(e) {
+function lT(e) {
 	for (let t of e.stages ?? []) if (J(t) && t.key === "attributes") return typeof t.class == "function" ? t : void 0;
 }
-function oT(e) {
+function uT(e) {
 	return !!e[tT];
 }
-function sT(e) {
+function dT(e) {
 	class t extends e {
 		static [tT] = !0;
+		activateListeners(e) {
+			let t = super.activateListeners(e);
+			return fT(this, e), t;
+		}
 		swap(e, t) {
-			let n = cT(this, e), r = cT(this, t);
+			let n = _T(this, e), r = _T(this, t);
 			if ($w(n, r)) return super.swap(e, t);
-			lT(e, n, t, r);
+			vT(e, n, t, r);
 		}
 	}
 	return t;
 }
-function cT(e, t) {
+function fT(e, t) {
+	let n = gT(t);
+	if (n) for (let t of hT(n)) t.addEventListener("dragstart", () => {
+		let r = t.dataset.ch;
+		r && pT(e, n, r);
+	}), t.addEventListener("dragend", () => {
+		mT(n);
+	}), t.addEventListener("drop", () => {
+		mT(n);
+	});
+}
+function pT(e, t, n) {
+	mT(t);
+	let r = _T(e, n);
+	for (let i of hT(t)) {
+		let t = i.dataset.ch;
+		if (!t) continue;
+		if (t === n) {
+			i.classList.add(rT);
+			continue;
+		}
+		let a = $w(r, _T(e, t));
+		i.classList.add(a ? nT : iT);
+	}
+}
+function mT(e) {
+	for (let t of hT(e)) t.classList.remove(...aT);
+}
+function hT(e) {
+	return [...e.querySelectorAll(".ch-roll.ch-drag")];
+}
+function gT(e) {
+	if (e instanceof HTMLElement) return e;
+	if (!J(e)) return;
+	let t = e[0];
+	return t instanceof HTMLElement ? t : void 0;
+}
+function _T(e, t) {
 	let n = J(e.context) ? e.context : void 0, r = J(n?.characteristics) ? n.characteristics : void 0, i = (J(r?.[t]) ? r[t] : void 0)?.formula;
 	return typeof i == "string" ? i : void 0;
 }
-function lT(e, t, n, r) {
-	let i = uT(e), a = uT(n), o = Qw(t), s = Qw(r);
+function vT(e, t, n, r) {
+	let i = yT(e), a = yT(n), o = Qw(t), s = Qw(r);
 	ui.notifications?.warn?.(`Cannot swap ${i} and ${a}: ${i} uses ${o}, while ${a} uses ${s}.`);
 }
-function uT(e) {
+function yT(e) {
 	let t = game.wfrp4e?.config?.characteristics;
 	if (!J(t)) return e;
 	let n = t[e];
@@ -12528,10 +12573,10 @@ function uT(e) {
 }
 //#endregion
 //#region src/view/apps/workbench/WorkbenchApp.vue?vue&type=script&setup=true&lang.ts
-var dT = { class: "customizer-workbench" }, fT = {
+var bT = { class: "customizer-workbench" }, xT = {
 	"aria-label": "Customizer targets",
 	class: "customizer-workbench__body"
-}, pT = { class: "customizer-workbench__targets" }, mT = /* @__PURE__ */ I({
+}, ST = { class: "customizer-workbench__targets" }, CT = /* @__PURE__ */ I({
 	__name: "WorkbenchApp",
 	setup(e) {
 		let t = [
@@ -12539,13 +12584,13 @@ var dT = { class: "customizer-workbench" }, fT = {
 			"Item sheets",
 			"Reusable dialogs"
 		];
-		return (e, n) => (z(), B("main", dT, [n[1] ||= H("header", { class: "customizer-workbench__header" }, [H("p", null, "WFRP4e"), H("h1", null, "Customizer Workbench")], -1), H("section", fT, [H("div", pT, [(z(), B(R, null, L(t, (e) => H("button", {
+		return (e, n) => (z(), B("main", bT, [n[1] ||= H("header", { class: "customizer-workbench__header" }, [H("p", null, "WFRP4e"), H("h1", null, "Customizer Workbench")], -1), H("section", xT, [H("div", ST, [(z(), B(R, null, L(t, (e) => H("button", {
 			key: e,
 			disabled: "",
 			type: "button"
 		}, A(e), 1)), 64))]), n[0] ||= H("div", { class: "customizer-workbench__empty" }, [H("strong", null, "Vue application shell mounted."), H("span", null, "The first customizer surface can land here.")], -1)])]));
 	}
-}), hT = class extends Gf {
+}), wT = class extends Gf {
 	static DEFAULT_OPTIONS = {
 		...super.DEFAULT_OPTIONS,
 		id: `${$}-workbench`,
@@ -12560,22 +12605,22 @@ var dT = { class: "customizer-workbench" }, fT = {
 		}
 	};
 	getVueComponent() {
-		return mT;
+		return CT;
 	}
-}, gT = `${$}.debugShapeProbes`, _T = "wfrp4eCustomizerShapeProbes", vT = "wfrp4eCustomizerShapePreset";
+}, TT = `${$}.debugShapeProbes`, ET = "wfrp4eCustomizerShapeProbes", DT = "wfrp4eCustomizerShapePreset";
 //#endregion
 //#region src/module/debug/shape-inspector/utils.ts
-function yT(e, t, n) {
+function OT(e, t, n) {
 	let r = Number(e);
 	return Number.isFinite(r) ? Math.max(0, Math.min(n, Math.floor(r))) : t;
 }
-function bT(e) {
+function kT(e) {
 	return typeof e == "object" && !!e;
 }
-function xT(e) {
+function AT(e) {
 	return typeof e == "string" ? e.trim().toLocaleLowerCase() : "";
 }
-function ST(e) {
+function jT(e) {
 	try {
 		return localStorage.getItem(e);
 	} catch {
@@ -12584,65 +12629,65 @@ function ST(e) {
 }
 //#endregion
 //#region src/module/debug/shape-inspector/path-resolver.ts
-function CT(e) {
-	let t = kT(e), n = wT(globalThis, t.root);
+function MT(e) {
+	let t = RT(e), n = NT(globalThis, t.root);
 	for (let e of t.tokens) {
 		if (e.type === "property") {
-			n = wT(n, e.key);
+			n = NT(n, e.key);
 			continue;
 		}
 		if (e.type === "index") {
-			n = wT(n, String(e.index));
+			n = NT(n, String(e.index));
 			continue;
 		}
-		n = TT(n, e.name, e.args);
+		n = PT(n, e.name, e.args);
 	}
 	return n;
 }
-function wT(e, t) {
-	if (!(!bT(e) && typeof e != "function")) try {
+function NT(e, t) {
+	if (!(!kT(e) && typeof e != "function")) try {
 		return e[t];
 	} catch {
 		return;
 	}
 }
-function TT(e, t, n) {
+function PT(e, t, n) {
 	if (t === "at") {
 		let t = Number(n[0] ?? 0), r = Number.isFinite(t) ? t : 0;
-		return AT(e).at(r);
+		return zT(e).at(r);
 	}
 	if (t === "findByName") {
-		let t = xT(n[0] ?? "");
-		return AT(e).find((e) => xT(wT(e, "name")) === t);
+		let t = AT(n[0] ?? "");
+		return zT(e).find((e) => AT(NT(e, "name")) === t);
 	}
 	if (t === "findByType") {
-		let t = xT(n[0] ?? "");
-		return AT(e).find((e) => xT(wT(e, "type")) === t);
+		let t = AT(n[0] ?? "");
+		return zT(e).find((e) => AT(NT(e, "type")) === t);
 	}
 	if (t === "get") {
 		let t = n[0] ?? "";
 		if (e instanceof Map) return e.get(t);
-		let r = wT(e, "get");
+		let r = NT(e, "get");
 		if (typeof r == "function") return r.call(e, t);
 	}
 	if (t === "sample") {
-		let t = yT(n[0], 3, 60);
-		return AT(e).slice(0, t);
+		let t = OT(n[0], 3, 60);
+		return zT(e).slice(0, t);
 	}
 	throw Error(`Unsupported path method "${t}".`);
 }
-function ET(e) {
-	return e.trim() ? e.split(",").map((e) => OT(e.trim())).map(String) : [];
+function FT(e) {
+	return e.trim() ? e.split(",").map((e) => LT(e.trim())).map(String) : [];
 }
-function DT(e) {
+function IT(e) {
 	let t = e.trim();
-	return /^-?\d+$/.test(t) ? Number(t) : OT(t);
+	return /^-?\d+$/.test(t) ? Number(t) : LT(t);
 }
-function OT(e) {
+function LT(e) {
 	let t = /^["'](?<value>.*)["']$/.exec(e);
 	return t?.groups ? t.groups.value ?? "" : e;
 }
-function kT(e) {
+function RT(e) {
 	let t = /^(?<root>[$A-Z_a-z][\w$]*)/.exec(e.trim());
 	if (!t?.groups) throw Error(`Debug path "${e}" does not start with a root name.`);
 	let n = t.groups.root;
@@ -12654,7 +12699,7 @@ function kT(e) {
 			let t = e.groups.name;
 			if (!t) throw Error(`Could not parse debug path near "${i}".`);
 			r.push({
-				args: ET(e.groups.args ?? ""),
+				args: FT(e.groups.args ?? ""),
 				name: t,
 				type: "method"
 			}), i = i.slice(e[0].length);
@@ -12675,7 +12720,7 @@ function kT(e) {
 			let e = n.groups.index;
 			if (!e) throw Error(`Could not parse debug path near "${i}".`);
 			r.push({
-				index: DT(e),
+				index: IT(e),
 				type: "index"
 			}), i = i.slice(n[0].length);
 			continue;
@@ -12687,14 +12732,14 @@ function kT(e) {
 		tokens: r
 	};
 }
-function AT(e) {
+function zT(e) {
 	if (Array.isArray(e)) return e;
-	let t = wT(e, "contents");
+	let t = NT(e, "contents");
 	return Array.isArray(t) ? t : [];
 }
 //#endregion
 //#region src/module/debug/shape-inspector/presets.ts
-var jT = { "npc-builder": [
+var BT = { "npc-builder": [
 	{
 		hook: "ready",
 		label: "game.actors collection",
@@ -12768,82 +12813,82 @@ var jT = { "npc-builder": [
 ] };
 //#endregion
 //#region src/module/debug/shape-inspector/probe-config.ts
-function MT() {
+function VT() {
 	return window.location.href.includes("wfrp4eCustomizerShapeProbes") || window.location.href.includes("wfrp4eCustomizerShapePreset");
 }
-function NT(e) {
+function HT(e) {
 	let t = {
 		hook: e.hook ?? "ready",
-		maxDepth: yT(e.maxDepth, 2, 6),
-		maxEntries: yT(e.maxEntries, 12, 60),
+		maxDepth: OT(e.maxDepth, 2, 6),
+		maxEntries: OT(e.maxEntries, 12, 60),
 		path: e.path.trim()
 	};
 	return e.label && (t.label = e.label), t;
 }
-function PT() {
-	return [...FT(), ...IT()].map(NT);
+function UT() {
+	return [...WT(), ...GT()].map(HT);
 }
-function FT() {
-	let e = ST(gT);
+function WT() {
+	let e = jT(TT);
 	if (!e) return [];
 	try {
 		let t = JSON.parse(e);
-		return Array.isArray(t) ? t.filter(RT).map(NT) : [];
+		return Array.isArray(t) ? t.filter(qT).map(HT) : [];
 	} catch {
 		return [];
 	}
 }
-function IT() {
+function GT() {
 	let e = [], t = [new URLSearchParams(window.location.search), new URLSearchParams(window.location.hash.replace(/^#/, ""))];
 	for (let n of t) {
-		let t = n.get(vT), r = n.get(_T);
-		t && e.push(...jT[t] ?? []), r && e.push(...LT(r));
+		let t = n.get(DT), r = n.get(ET);
+		t && e.push(...BT[t] ?? []), r && e.push(...KT(r));
 	}
-	return window.location.href.includes("wfrp4eCustomizerShapePreset=npc-builder") && !e.length && e.push(...jT["npc-builder"] ?? []), e;
+	return window.location.href.includes("wfrp4eCustomizerShapePreset=npc-builder") && !e.length && e.push(...BT["npc-builder"] ?? []), e;
 }
-function LT(e) {
+function KT(e) {
 	try {
 		let t = JSON.parse(decodeURIComponent(e));
-		return Array.isArray(t) ? t.filter(RT) : [];
+		return Array.isArray(t) ? t.filter(qT) : [];
 	} catch (e) {
 		return t(`${$} | Could not parse URL shape probes.`, e), [];
 	}
 }
-function RT(e) {
+function qT(e) {
 	return typeof e != "object" || !e ? !1 : "path" in e && typeof e.path == "string";
 }
 //#endregion
 //#region src/module/debug/shape-inspector/summary.ts
-function zT(e, t) {
-	return !bT(e) && typeof e != "function" ? WT(e) : typeof e == "function" ? HT(e) : Array.isArray(e) ? BT(e, t) : e instanceof Map ? VT(e, t) : UT(e, t);
+function JT(e, t) {
+	return !kT(e) && typeof e != "function" ? $T(e) : typeof e == "function" ? ZT(e) : Array.isArray(e) ? YT(e, t) : e instanceof Map ? XT(e, t) : QT(e, t);
 }
-function BT(e, t) {
+function YT(e, t) {
 	return {
 		length: e.length,
-		sample: e.slice(0, t.maxEntries).map((e) => zT(e, KT(t))),
+		sample: e.slice(0, t.maxEntries).map((e) => JT(e, tE(t))),
 		type: "array"
 	};
 }
-function VT(e, t) {
+function XT(e, t) {
 	return {
 		sample: [...e.entries()].slice(0, t.maxEntries).map(([e, n]) => ({
-			key: zT(e, KT(t)),
-			value: zT(n, KT(t))
+			key: JT(e, tE(t)),
+			value: JT(n, tE(t))
 		})),
 		size: e.size,
 		type: "Map"
 	};
 }
-function HT(e) {
+function ZT(e) {
 	return {
 		name: e.name,
 		type: "function"
 	};
 }
-function UT(e, t) {
+function QT(e, t) {
 	if (t.seen.has(e)) return { type: "circular" };
 	t.seen.add(e);
-	let n = GT(e, t.maxEntries), r = wT(e, "constructor"), i = {
+	let n = eE(e, t.maxEntries), r = NT(e, "constructor"), i = {
 		constructor: typeof r == "function" && r.name ? r.name : "Object",
 		keys: n,
 		type: "object"
@@ -12855,16 +12900,16 @@ function UT(e, t) {
 		"type",
 		"uuid"
 	]) {
-		let n = wT(e, t);
+		let n = NT(e, t);
 		typeof n == "string" && (i[t] = n);
 	}
 	if (t.maxDepth <= 0) return i;
 	let a = {};
-	for (let r of n) a[r] = zT(wT(e, r), KT(t));
+	for (let r of n) a[r] = JT(NT(e, r), tE(t));
 	i.properties = a;
-	let o = wT(e, "toObject");
+	let o = NT(e, "toObject");
 	if (typeof o == "function") try {
-		i.source = zT(o.call(e), KT(t));
+		i.source = JT(o.call(e), tE(t));
 	} catch (e) {
 		i.source = {
 			error: e instanceof Error ? e.message : String(e),
@@ -12873,7 +12918,7 @@ function UT(e, t) {
 	}
 	return i;
 }
-function WT(e) {
+function $T(e) {
 	if (typeof e == "string") {
 		let t = e.length > 120 ? `${e.slice(0, 120)}...` : e;
 		return {
@@ -12887,10 +12932,10 @@ function WT(e) {
 		value: e
 	};
 }
-function GT(e, t) {
+function eE(e, t) {
 	return Object.keys(e).sort().slice(0, t);
 }
-function KT(e) {
+function tE(e) {
 	return {
 		maxDepth: e.maxDepth - 1,
 		maxEntries: e.maxEntries,
@@ -12899,42 +12944,42 @@ function KT(e) {
 }
 //#endregion
 //#region src/module/debug/shape-inspector/index.ts
-function qT() {
-	localStorage.removeItem(gT), e(`${$} | Cleared debug shape probes.`);
+function nE() {
+	localStorage.removeItem(TT), e(`${$} | Cleared debug shape probes.`);
 }
-function JT() {
-	return PT();
+function rE() {
+	return UT();
 }
-function YT(e, t = {}) {
-	let n = QT(e, t);
-	return eE(n), n;
+function iE(e, t = {}) {
+	let n = sE(e, t);
+	return lE(n), n;
 }
-function XT() {
-	let t = PT();
+function aE() {
+	let t = UT();
 	for (let e of ["init", "setup"]) {
 		let n = t.filter((t) => t.hook === e);
 		n.length && Hooks.once(e, () => {
-			for (let t of n) $T(t, e);
+			for (let t of n) cE(t, e);
 		});
 	}
 	Hooks.once("ready", () => {
-		let t = PT().filter((e) => (e.hook ?? "ready") === "ready");
-		MT() && e(`${$} | Debug shape ready probes discovered: ${t.length}`, window.location.href);
-		for (let e of t) $T(e, "ready");
+		let t = UT().filter((e) => (e.hook ?? "ready") === "ready");
+		VT() && e(`${$} | Debug shape ready probes discovered: ${t.length}`, window.location.href);
+		for (let e of t) cE(e, "ready");
 	});
 }
-function ZT(t) {
-	let n = t.map(NT);
-	localStorage.setItem(gT, JSON.stringify(n)), e(`${$} | Stored ${n.length} debug shape probe(s). Reload Foundry to run init/setup probes.`);
+function oE(t) {
+	let n = t.map(HT);
+	localStorage.setItem(TT, JSON.stringify(n)), e(`${$} | Stored ${n.length} debug shape probe(s). Reload Foundry to run init/setup probes.`);
 }
-function QT(e, t = {}, n) {
-	let r = yT(t.maxDepth, 2, 6), i = yT(t.maxEntries, 12, 60), a = CT(e), o = {
+function sE(e, t = {}, n) {
+	let r = OT(t.maxDepth, 2, 6), i = OT(t.maxEntries, 12, 60), a = MT(e), o = {
 		inspectedAt: (/* @__PURE__ */ new Date()).toISOString(),
 		label: t.label || e,
 		maxDepth: r,
 		maxEntries: i,
 		path: e,
-		value: zT(a, {
+		value: JT(a, {
 			maxDepth: r,
 			maxEntries: i,
 			seen: /* @__PURE__ */ new WeakSet()
@@ -12942,23 +12987,23 @@ function QT(e, t = {}, n) {
 	};
 	return n && (o.hook = n), o;
 }
-function $T(e, n) {
+function cE(e, n) {
 	try {
-		eE(QT(e.path, e, n));
+		lE(sE(e.path, e, n));
 	} catch (n) {
 		t(`${$} | Debug shape probe failed for "${e.path}".`, n);
 	}
 }
-function eE(t) {
+function lE(t) {
 	e(`${$} | Debug shape probe: ${t.label}`, JSON.stringify(t, null, 2));
 }
 //#endregion
 //#region src/module/create-module-api.ts
-function tE() {
+function uE() {
 	return {
-		clearDebugShapeProbes: qT,
-		getDebugShapeProbes: JT,
-		inspectPath: YT,
+		clearDebugShapeProbes: nE,
+		getDebugShapeProbes: rE,
+		inspectPath: iE,
 		listNpcAutoAdvanceStrategies: Jm,
 		openNpcBuilder: async () => {
 			await new Fw().render(!0);
@@ -12967,22 +13012,22 @@ function tE() {
 			await new hp().render(!0);
 		},
 		openWorkbench: async () => {
-			await new hT().render(!0);
+			await new wT().render(!0);
 		},
 		registerNpcAutoAdvanceStrategy: qm,
-		setDebugShapeProbes: ZT
+		setDebugShapeProbes: oE
 	};
 }
 //#endregion
 //#region src/module/register-module-menus.ts
-function nE() {
+function dE() {
 	game.settings.registerMenu($, "workbench", {
 		hint: "Open the WFRP4e Customizer Apps workbench.",
 		icon: "fa-solid fa-screwdriver-wrench",
 		label: "Open Workbench",
 		name: "WFRP4e Customizer Apps",
 		restricted: !0,
-		type: hT
+		type: wT
 	}), game.settings.registerMenu($, "npc-builder", {
 		hint: "Build a WFRP4e NPC from a base Actor and Career items.",
 		icon: "fa-solid fa-user-plus",
@@ -13001,11 +13046,11 @@ function nE() {
 }
 //#endregion
 //#region src/module/register-module-settings.ts
-function rE() {
+function fE() {
 	tS(), up();
 }
-XT(), Hooks.once("init", () => {
-	e(`${$} | Initializing`), rE(), game.system.id === "wfrp4e" && (Kw(), nT()), nE(), Rw();
+aE(), Hooks.once("init", () => {
+	e(`${$} | Initializing`), fE(), game.system.id === "wfrp4e" && (Kw(), oT()), dE(), Rw();
 }), Hooks.once("ready", () => {
 	if (game.system.id !== "wfrp4e") {
 		t(`${$} | Loaded outside ${lf}; skipping module API registration.`);
@@ -13016,6 +13061,6 @@ XT(), Hooks.once("init", () => {
 		t(`${$} | Foundry did not expose the module entry.`);
 		return;
 	}
-	n.api = tE(), gx(), Fx(), e(`${$} | Ready`);
+	n.api = uE(), gx(), Fx(), e(`${$} | Ready`);
 });
 //#endregion
