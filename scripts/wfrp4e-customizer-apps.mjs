@@ -11393,152 +11393,220 @@ var Gx = { class: "npc-builder" }, Kx = { class: "npc-builder__header" }, qx = {
 	}
 });
 //#endregion
-//#region src/module/foundry/compendiums.ts
-function $x(e, t) {
-	return t.uuid ? t.uuid : t._id && e.getUuid ? e.getUuid(t._id) : "";
-}
-function eS(e) {
-	return e.documentName === "Item" || Z(e, ["metadata", "type"]) === "Item" || Z(e, ["metadata", "documentName"]) === "Item";
-}
-async function tS(e) {
-	for (let t of game.packs ?? []) {
-		if (!eS(t) || !t.getDocuments) continue;
-		let n = await t.getDocuments();
-		for (let r of n) Bp(r) && e(r, t);
-		await nS();
-	}
-}
-function nS() {
-	return new Promise((e) => {
-		globalThis.setTimeout(e, 0);
-	});
-}
-//#endregion
 //#region src/functions/npc-builder/extract-career-grants.ts
-function rS(e) {
+function $x(e) {
 	return {
-		characteristics: iS(e),
-		skills: aS(e),
-		talents: sS(e, [["talents", "value"], ["talents"]]),
-		trappings: sS(e, [["trappings", "value"], ["trappings"]])
+		characteristics: eS(e),
+		skills: tS(e),
+		talents: rS(e, [["talents", "value"], ["talents"]]),
+		trappings: rS(e, [["trappings", "value"], ["trappings"]])
 	};
 }
-function iS(e) {
-	let t = sS(e, [["characteristics", "value"], ["characteristics"]]);
-	if (t.length) return t.map(oS);
+function eS(e) {
+	let t = rS(e, [["characteristics", "value"], ["characteristics"]]);
+	if (t.length) return t.map(nS);
 	let n = X(e, ["characteristics"]);
 	if (!Y(n)) return [];
 	let r = [];
-	for (let [e, t] of Object.entries(n)) t && r.push(oS(e));
-	return lS(r);
+	for (let [e, t] of Object.entries(n)) t && r.push(nS(e));
+	return aS(r);
 }
-function aS(e) {
-	return sS(e, [["skills", "value"], ["skills"]], { preserveDuplicates: !0 });
+function tS(e) {
+	return rS(e, [["skills", "value"], ["skills"]], { preserveDuplicates: !0 });
 }
-function oS(e) {
+function nS(e) {
 	let t = e.trim().toLocaleLowerCase();
 	if (Js(t)) return Ks[t];
 	let n = qs[t];
 	return n ? Ks[n] : e.trim();
 }
-function sS(e, t, n = {}) {
+function rS(e, t, n = {}) {
 	for (let r of t) {
 		let t = Ws(X(e, r));
-		if (t.length) return n.preserveDuplicates ? cS(t) : lS(t);
+		if (t.length) return n.preserveDuplicates ? iS(t) : aS(t);
 	}
 	return [];
 }
-function cS(e) {
+function iS(e) {
 	return e.map((e) => e.trim()).filter(Boolean);
 }
-function lS(e) {
-	return [...new Set(cS(e))].sort((e, t) => e.localeCompare(t));
+function aS(e) {
+	return [...new Set(iS(e))].sort((e, t) => e.localeCompare(t));
+}
+//#endregion
+//#region src/module/foundry/compendiums.ts
+function oS(e, t) {
+	return t.uuid ? t.uuid : t._id && e.getUuid ? e.getUuid(t._id) : "";
+}
+function sS(e) {
+	return e.documentName === "Item" || Z(e, ["metadata", "type"]) === "Item" || Z(e, ["metadata", "documentName"]) === "Item";
+}
+function cS(e) {
+	return Array.isArray(e) ? e.filter(uS) : Y(e) && Array.isArray(e.contents) ? e.contents.filter(uS) : dS(e) ? [...e].flatMap((e) => {
+		let t = Array.isArray(e) ? e[1] : e;
+		return uS(t) ? [t] : [];
+	}) : [];
+}
+function lS() {
+	return new Promise((e) => {
+		globalThis.setTimeout(e, 0);
+	});
+}
+function uS(e) {
+	return Y(e);
+}
+function dS(e) {
+	return Y(e) && Symbol.iterator in e;
 }
 //#endregion
 //#region src/module/wfrp4e/career-summary.ts
-function uS(e) {
+function fS(e) {
 	return {
-		careerGroup: dS(e),
-		grants: rS(e.system),
+		careerGroup: pS(e),
+		grants: $x(e.system),
 		img: e.img ?? "",
-		level: fS(e),
+		level: mS(e),
 		name: e.name,
 		uuid: e.uuid
 	};
 }
-function dS(e) {
+function pS(e) {
 	return Z(e.system, ["careergroup", "value"]);
 }
-function fS(e) {
+function mS(e) {
 	let t = X(e.system, ["level", "value"]), n = Number(t);
 	return Number.isFinite(n) ? n : null;
 }
 //#endregion
 //#region src/module/wfrp4e/career-index.ts
-var pS = /* @__PURE__ */ new Map(), mS = "idle", hS = null;
-function gS() {
-	return hS || (mS = "indexing", pS.clear(), hS = vS().then(() => {
-		mS = "ready";
-	}).catch((e) => {
-		mS = "error", t("wfrp4e-customizer-apps | Career indexing failed.", e);
-	}), hS);
-}
-async function _S(e) {
-	return mS === "idle" && gS(), !e.careerGroup || e.level === null ? [] : [...pS.values()].filter((t) => bS(t, e)).sort(SS);
-}
-async function vS() {
-	yS(), await nS(), await tS((e) => {
-		e.type === "career" && pS.set(e.uuid, uS(e));
-	});
-}
+var hS = [
+	"name",
+	"type",
+	"img",
+	"system.careergroup.value",
+	"system.characteristics",
+	"system.level.value",
+	"system.skills",
+	"system.talents",
+	"system.trappings"
+], gS = /* @__PURE__ */ new Map(), _S = "idle", vS = null;
 function yS() {
-	for (let e of game.items?.contents ?? []) e.type === "career" && pS.set(e.uuid, uS(e));
+	return vS || (_S = "indexing", gS.clear(), vS = xS().then(() => {
+		_S = "ready";
+	}).catch((e) => {
+		_S = "error", t("wfrp4e-customizer-apps | Career indexing failed.", e);
+	}), vS);
 }
-function bS(e, t) {
-	return e.uuid !== t.uuid && e.level !== null && t.level !== null && e.level < t.level && xS(e.careerGroup) === xS(t.careerGroup);
+async function bS(e) {
+	return _S === "idle" && yS(), !e.careerGroup || e.level === null ? [] : [...gS.values()].filter((t) => ES(t, e)).sort(OS);
 }
-function xS(e) {
+async function xS() {
+	SS(), await lS();
+	for (let e of game.packs ?? []) {
+		if (!sS(e) || !e.getIndex) continue;
+		let t = await e.getIndex({ fields: hS });
+		for (let n of cS(t)) {
+			let t = CS(e, n);
+			t && gS.set(t.uuid, t);
+		}
+		await lS();
+	}
+}
+function SS() {
+	for (let e of game.items?.contents ?? []) e.type === "career" && gS.set(e.uuid, fS(e));
+}
+function CS(e, t) {
+	let n = oS(e, t);
+	if (t.type !== "career" || !t.name || !n) return null;
+	let r = X(t, ["system"]);
+	return {
+		careerGroup: wS(t),
+		grants: $x(r),
+		img: t.img ?? "",
+		level: TS(t),
+		name: t.name,
+		uuid: n
+	};
+}
+function wS(e) {
+	let t = X(e, [
+		"system",
+		"careergroup",
+		"value"
+	]);
+	return typeof t == "string" ? t.trim() : "";
+}
+function TS(e) {
+	let t = X(e, [
+		"system",
+		"level",
+		"value"
+	]), n = Number(t);
+	return Number.isFinite(n) ? n : null;
+}
+function ES(e, t) {
+	return e.uuid !== t.uuid && e.level !== null && t.level !== null && e.level < t.level && DS(e.careerGroup) === DS(t.careerGroup);
+}
+function DS(e) {
 	return e.trim().toLocaleLowerCase();
 }
-function SS(e, t) {
+function OS(e, t) {
 	let n = e.level ?? 0, r = t.level ?? 0;
 	return n === r ? e.name.localeCompare(t.name) : n - r;
 }
 //#endregion
 //#region src/module/wfrp4e/skill-specializations.ts
-var CS = /* @__PURE__ */ new Map(), wS = /* @__PURE__ */ new Map(), TS = /* @__PURE__ */ new Map(), ES = "idle", DS = null;
-async function OS(e) {
+var kS = [
+	"name",
+	"type",
+	"system.characteristic.value"
+], AS = /* @__PURE__ */ new Map(), jS = /* @__PURE__ */ new Map(), MS = /* @__PURE__ */ new Map(), NS = "idle", PS = null;
+async function FS(e) {
 	let t = jm(e);
-	return t ? (ES === "idle" && AS(), DS && await DS, [...CS.get(t) ?? []].sort((e, t) => e.localeCompare(t))) : [];
+	return t ? (NS === "idle" && LS(), PS && await PS, [...AS.get(t) ?? []].sort((e, t) => e.localeCompare(t))) : [];
 }
-async function kS(e) {
-	return ES === "idle" && AS(), DS && await DS, e.flatMap((e) => {
-		let t = PS(e);
+async function IS(e) {
+	return NS === "idle" && LS(), PS && await PS, e.flatMap((e) => {
+		let t = US(e);
 		return t ? [{
 			...t,
 			skillName: e
 		}] : [];
 	});
 }
-function AS() {
-	return DS || (ES = "indexing", CS.clear(), wS.clear(), TS.clear(), DS = jS().then(() => {
-		ES = "ready";
+function LS() {
+	return PS || (NS = "indexing", AS.clear(), jS.clear(), MS.clear(), PS = RS().then(() => {
+		NS = "ready";
 	}).catch((e) => {
-		ES = "error", t("wfrp4e-customizer-apps | Skill specialization indexing failed.", e);
-	}), DS);
+		NS = "error", t("wfrp4e-customizer-apps | Skill specialization indexing failed.", e);
+	}), PS);
 }
-async function jS() {
-	FS(), await nS(), await tS(MS);
+async function RS() {
+	WS(), await lS();
+	for (let e of game.packs ?? []) {
+		if (!sS(e) || !e.getIndex) continue;
+		let t = await e.getIndex({ fields: kS });
+		for (let e of cS(t)) BS(e);
+		await lS();
+	}
 }
-function MS(e) {
+function zS(e) {
 	if (e.type !== "skill") return;
-	NS(e);
+	VS(e);
 	let t = Om(e.name);
 	if (!t) return;
-	let n = jm(t.baseName), r = CS.get(n) ?? /* @__PURE__ */ new Set();
-	r.add(t.specialization), CS.set(n, r);
+	let n = jm(t.baseName), r = AS.get(n) ?? /* @__PURE__ */ new Set();
+	r.add(t.specialization), AS.set(n, r);
 }
-function NS(e) {
+function BS(e) {
+	if (e.type !== "skill" || !e.name) return;
+	HS(e);
+	let t = Om(e.name);
+	if (!t) return;
+	let n = jm(t.baseName), r = AS.get(n) ?? /* @__PURE__ */ new Set();
+	r.add(t.specialization), AS.set(n, r);
+}
+function VS(e) {
 	let t = Z(e.system, ["characteristic", "value"]);
 	if (!Js(t)) return;
 	let n = {
@@ -11546,18 +11614,32 @@ function NS(e) {
 		characteristicName: Ks[t],
 		skillName: e.name
 	}, r = jm(e.name), i = jm(Om(e.name)?.baseName ?? e.name);
-	wS.set(r, n), TS.has(i) || TS.set(i, n);
+	jS.set(r, n), MS.has(i) || MS.set(i, n);
 }
-function PS(e) {
+function HS(e) {
+	let t = Z(e, [
+		"system",
+		"characteristic",
+		"value"
+	]);
+	if (!Js(t) || !e.name) return;
+	let n = {
+		characteristicKey: t,
+		characteristicName: Ks[t],
+		skillName: e.name
+	}, r = jm(e.name), i = jm(Om(e.name)?.baseName ?? e.name);
+	jS.set(r, n), MS.has(i) || MS.set(i, n);
+}
+function US(e) {
 	let t = jm(e), n = jm(Om(e)?.baseName ?? e);
-	return wS.get(t) ?? TS.get(n) ?? null;
+	return jS.get(t) ?? MS.get(n) ?? null;
 }
-function FS() {
-	for (let e of game.items?.contents ?? []) MS(e);
+function WS() {
+	for (let e of game.items?.contents ?? []) zS(e);
 }
 //#endregion
 //#region src/module/foundry/item-sources.ts
-function IS(e, t) {
+function GS(e, t) {
 	return {
 		img: "systems/wfrp4e/icons/blank.png",
 		name: e,
@@ -11565,33 +11647,33 @@ function IS(e, t) {
 		type: t
 	};
 }
-function LS(e, t, n) {
-	let r = e ? e.toObject() : IS(t, n);
+function KS(e, t, n) {
+	let r = e ? e.toObject() : GS(t, n);
 	return delete r._id, r;
 }
-function RS(e, t, n) {
-	return e.items?.contents.find((e) => e.type === n && VS(e.name, t)) ?? null;
+function qS(e, t, n) {
+	return e.items?.contents.find((e) => e.type === n && XS(e.name, t)) ?? null;
 }
-function zS(e, t, n) {
-	return e.items?.contents.find((e) => t && e.uuid === t ? !0 : VS(e.name, n)) ?? null;
+function JS(e, t, n) {
+	return e.items?.contents.find((e) => t && e.uuid === t ? !0 : XS(e.name, n)) ?? null;
 }
-function BS(e, t) {
-	return game.items?.contents.find((n) => t.includes(n.type) && VS(n.name, e)) ?? null;
+function YS(e, t) {
+	return game.items?.contents.find((n) => t.includes(n.type) && XS(n.name, e)) ?? null;
 }
-function VS(e, t) {
+function XS(e, t) {
 	return e.trim().toLocaleLowerCase() === t.trim().toLocaleLowerCase();
 }
 //#endregion
 //#region src/module/wfrp4e/item-lookup.ts
-async function HS(e, t) {
-	return await game.wfrp4e?.utility?.findItem?.(e, t) || BS(e, t);
+async function ZS(e, t) {
+	return await game.wfrp4e?.utility?.findItem?.(e, t) || YS(e, t);
 }
 //#endregion
 //#region src/module/wfrp4e/talent-maximums.ts
-async function US(e) {
+async function QS(e) {
 	let t = [];
-	for (let n of WS(e)) {
-		let e = await HS(n, ["talent"]);
+	for (let n of $S(e)) {
+		let e = await ZS(n, ["talent"]);
 		e && t.push({
 			maximumFormula: Z(e.system, ["max", "formula"]),
 			maximumKey: Z(e.system, ["max", "value"]),
@@ -11600,7 +11682,7 @@ async function US(e) {
 	}
 	return t;
 }
-function WS(e) {
+function $S(e) {
 	let t = /* @__PURE__ */ new Set(), n = [];
 	for (let r of e) {
 		let e = r.trim().toLocaleLowerCase();
@@ -11610,23 +11692,23 @@ function WS(e) {
 }
 //#endregion
 //#region src/module/apps/npc-builder/settings.ts
-var GS = "npcBuilderSettings", KS = Qm(), qS = Qp({
-	defaultValue: KS,
-	key: GS,
+var eC = "npcBuilderSettings", tC = Qm(), nC = Qp({
+	defaultValue: tC,
+	key: eC,
 	name: "NPC Builder Settings",
-	normalize: ZS
+	normalize: oC
 });
-function JS() {
-	$p(qS);
+function rC() {
+	$p(nC);
 }
-function YS() {
-	return em(qS);
+function iC() {
+	return em(nC);
 }
-async function XS(e) {
-	return await tm(qS, e);
+async function aC(e) {
+	return await tm(nC, e);
 }
-function ZS(e) {
-	if (typeof e != "object" || !e) return { ...KS };
+function oC(e) {
+	if (typeof e != "object" || !e) return { ...tC };
 	let t = e;
 	return {
 		allowBaseActorCharacteristics: t.allowBaseActorCharacteristics ?? !0,
@@ -11638,7 +11720,7 @@ function ZS(e) {
 		autoSelectGrantedSpells: t.autoSelectGrantedSpells ?? !0,
 		baseActorFolderUuid: typeof t.baseActorFolderUuid == "string" ? t.baseActorFolderUuid : "",
 		includeSpeciesInName: t.includeSpeciesInName ?? !1,
-		lowerCareerMode: QS(t.lowerCareerMode) ? t.lowerCareerMode : "prompt",
+		lowerCareerMode: sC(t.lowerCareerMode) ? t.lowerCareerMode : "prompt",
 		outputActorFolderUuid: typeof t.outputActorFolderUuid == "string" ? t.outputActorFolderUuid : "",
 		quickTraitFolderUuid: typeof t.quickTraitFolderUuid == "string" ? t.quickTraitFolderUuid : "",
 		searchCompendiumPortraitAssets: t.searchCompendiumPortraitAssets ?? !0,
@@ -11646,22 +11728,22 @@ function ZS(e) {
 		searchWebPortraitAssets: t.searchWebPortraitAssets ?? !1
 	};
 }
-function QS(e) {
+function sC(e) {
 	return e === "auto-add-all" || e === "never" || e === "prompt";
 }
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/advancements.ts
-async function $S(e, t) {
+async function cC(e, t) {
 	let n = {}, r = [], i = [];
 	for (let a of t) {
 		let t = Math.floor(a.current);
 		if (t === 0) continue;
 		let o = a.baseAdvances + t;
 		if (a.kind === "characteristic") {
-			aC(n, a, o);
+			mC(n, a, o);
 			continue;
 		}
-		let s = RS(e, a.name, a.kind);
+		let s = qS(e, a.name, a.kind);
 		if (s) {
 			r.push({
 				_id: s.id,
@@ -11669,7 +11751,7 @@ async function $S(e, t) {
 			});
 			continue;
 		}
-		let c = LS(await HS(a.name, [a.kind]), a.name, a.kind);
+		let c = KS(await ZS(a.name, [a.kind]), a.name, a.kind);
 		c.type = a.kind, Gs(c, [
 			"system",
 			"advances",
@@ -11678,7 +11760,7 @@ async function $S(e, t) {
 	}
 	Object.keys(n).length && await e.update(n), r.length && e.updateEmbeddedDocuments && await e.updateEmbeddedDocuments("Item", r), i.length && await e.createEmbeddedDocuments("Item", i);
 }
-function eC(e) {
+function lC(e) {
 	let t = [];
 	for (let [n, r] of Object.entries(Ks)) {
 		let i = Vs(e.system, [[
@@ -11734,10 +11816,10 @@ function eC(e) {
 	}
 	return t;
 }
-function tC(e, t) {
-	return e.items?.contents.filter((e) => e.type === t).map((n) => nC(e, n, t)) ?? [];
+function uC(e, t) {
+	return e.items?.contents.filter((e) => e.type === t).map((n) => dC(e, n, t)) ?? [];
 }
-function nC(e, t, n) {
+function dC(e, t, n) {
 	let r = Vs(t.system, [["advances", "value"], ["advances"]]);
 	if (n === "talent") return {
 		baseAdvances: r,
@@ -11747,7 +11829,7 @@ function nC(e, t, n) {
 		talentMaximumFormula: Z(t.system, ["max", "formula"]),
 		talentMaximumKey: Z(t.system, ["max", "value"])
 	};
-	let i = rC(t), a = i ? iC(e, i) : 0, o = Hs(t.system, [["total", "value"], ["total"]]), s = o !== null && i ? Math.max(0, o - a) : 0, c = Math.max(r, s), l = {
+	let i = fC(t), a = i ? pC(e, i) : 0, o = Hs(t.system, [["total", "value"], ["total"]]), s = o !== null && i ? Math.max(0, o - a) : 0, c = Math.max(r, s), l = {
 		baseAdvances: c,
 		current: i ? a + c : c,
 		kind: n,
@@ -11755,11 +11837,11 @@ function nC(e, t, n) {
 	};
 	return i && (l.characteristicKey = i, l.characteristicName = Ks[i]), l;
 }
-function rC(e) {
+function fC(e) {
 	let t = Z(e.system, ["characteristic", "value"]);
 	return Js(t) ? t : void 0;
 }
-function iC(e, t) {
+function pC(e, t) {
 	return Vs(e.system, [
 		[
 			"characteristics",
@@ -11796,25 +11878,25 @@ function iC(e, t) {
 		]
 	]);
 }
-function aC(e, t, n) {
+function mC(e, t, n) {
 	let r = qs[t.name.trim().toLocaleLowerCase()];
 	r && (e[`system.characteristics.${r}.advances`] = n);
 }
 //#endregion
 //#region src/module/foundry/embedded-items.ts
-function oC() {
+function hC() {
 	return {
 		creates: [],
 		deletes: [],
 		updates: []
 	};
 }
-async function sC(e, t) {
+async function gC(e, t) {
 	t.deletes.length && e.deleteEmbeddedDocuments && await e.deleteEmbeddedDocuments("Item", t.deletes), t.updates.length && e.updateEmbeddedDocuments && await e.updateEmbeddedDocuments("Item", t.updates), t.creates.length && await e.createEmbeddedDocuments("Item", t.creates);
 }
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/traits/config.ts
-function cC(e, t) {
+function _C(e, t) {
 	Gs(e, [
 		"system",
 		"specification",
@@ -11829,7 +11911,7 @@ function cC(e, t) {
 		"dice"
 	], t.dice);
 }
-function lC(e, t) {
+function vC(e, t) {
 	return {
 		_id: e,
 		"system.specification.value": t.specification,
@@ -11837,74 +11919,74 @@ function lC(e, t) {
 		...t.damage && t.dice ? { "system.rollable.dice": t.dice } : {}
 	};
 }
-function uC(e) {
+function yC(e) {
 	return {
 		...hm(),
-		attackType: mC(e.system, ["rollable", "attackType"]) || "melee",
-		bonusCharacteristic: mC(e.system, ["rollable", "bonusCharacteristic"]),
+		attackType: CC(e.system, ["rollable", "attackType"]) || "melee",
+		bonusCharacteristic: CC(e.system, ["rollable", "bonusCharacteristic"]),
 		damage: Us(e.system, [["rollable", "damage"]]),
-		defaultDifficulty: mC(e.system, ["rollable", "defaultDifficulty"]) || "challenging",
-		dice: mC(e.system, ["rollable", "dice"]),
+		defaultDifficulty: CC(e.system, ["rollable", "defaultDifficulty"]) || "challenging",
+		dice: CC(e.system, ["rollable", "dice"]),
 		rollable: Us(e.system, [["rollable", "value"]]),
-		skill: mC(e.system, ["rollable", "skill"]),
+		skill: CC(e.system, ["rollable", "skill"]),
 		sl: Us(e.system, [["rollable", "SL"]], !0),
-		specification: mC(e.system, ["specification", "value"])
+		specification: CC(e.system, ["specification", "value"])
 	};
 }
-function dC(e) {
-	return pC(e.system);
+function bC(e) {
+	return SC(e.system);
 }
-function fC(e) {
-	return pC(e.system);
+function xC(e) {
+	return SC(e.system);
 }
-function pC(e) {
+function SC(e) {
 	return Us(e, [["disabled"], ["disabled", "value"]]);
 }
-function mC(e, t) {
+function CC(e, t) {
 	let n = X(e, t);
 	return typeof n == "string" ? n.trim() : typeof n == "number" ? String(n) : "";
 }
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/traits/apply.ts
-async function hC(e, t) {
-	let n = oC();
+async function wC(e, t) {
+	let n = hC();
 	for (let r of t) {
-		let t = r.source === "base" ? zS(e, r.sourceUuid, r.name) : RS(e, r.name, "trait");
+		let t = r.source === "base" ? JS(e, r.sourceUuid, r.name) : qS(e, r.name, "trait");
 		if (r.ignored) {
 			t && n.deletes.push(t.id);
 			continue;
 		}
 		if (t) {
-			n.updates.push(lC(t.id, r.config));
+			n.updates.push(vC(t.id, r.config));
 			continue;
 		}
-		let i = LS(r.sourceUuid ? await gC(r.sourceUuid) : await HS(r.name, ["trait"]), r.name, "trait");
-		i.type = "trait", Gs(i, ["system", "disabled"], !1), cC(i, r.config), n.creates.push(i);
+		let i = KS(r.sourceUuid ? await TC(r.sourceUuid) : await ZS(r.name, ["trait"]), r.name, "trait");
+		i.type = "trait", Gs(i, ["system", "disabled"], !1), _C(i, r.config), n.creates.push(i);
 	}
-	await sC(e, n);
+	await gC(e, n);
 }
-async function gC(e) {
+async function TC(e) {
 	let t = await fromUuid(e);
 	return Bp(t) ? t : null;
 }
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/traits/actor-traits.ts
-function _C(e) {
-	return e.items?.contents.filter((e) => e.type === "trait" && !dC(e)).map(bC) ?? [];
+function EC(e) {
+	return e.items?.contents.filter((e) => e.type === "trait" && !bC(e)).map(kC) ?? [];
 }
-function vC(e) {
-	return e.items?.contents.filter((e) => e.type === "trait" && dC(e)).map(bC) ?? [];
+function DC(e) {
+	return e.items?.contents.filter((e) => e.type === "trait" && bC(e)).map(kC) ?? [];
 }
-function yC(e) {
+function OC(e) {
 	Array.isArray(e.items) && (e.items = e.items.filter((e) => {
 		if (typeof e != "object" || !e) return !0;
 		let t = e;
-		return t.type !== "trait" || !fC(t);
+		return t.type !== "trait" || !xC(t);
 	}));
 }
-function bC(e) {
+function kC(e) {
 	return {
-		config: uC(e),
+		config: yC(e),
 		img: e.img ?? "",
 		name: e.name,
 		uuid: e.uuid
@@ -11912,7 +11994,7 @@ function bC(e) {
 }
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/traits/difficulty-options.ts
-var xC = [
+var AC = [
 	{
 		label: "Very Easy",
 		value: "veasy"
@@ -11950,9 +12032,9 @@ var xC = [
 		value: "impossible"
 	}
 ];
-async function SC() {
+async function jC() {
 	let e = X(game.wfrp4e?.config, ["difficultyLabels"]);
-	if (!Y(e)) return xC;
+	if (!Y(e)) return AC;
 	let t = Object.entries(e).filter((e) => {
 		let [t, n] = e;
 		return !!t.trim() && typeof n == "string";
@@ -11960,16 +12042,16 @@ async function SC() {
 		label: t,
 		value: e
 	}));
-	return t.length ? t : xC;
+	return t.length ? t : AC;
 }
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/traits/drops.ts
-async function CC(e) {
+async function MC(e) {
 	let t = Wp(e);
 	if (t.type !== "Item" || !t.uuid) throw Error("Drop a Foundry Trait item here.");
 	let n = Up(await fromUuid(t.uuid), "trait", "Drop a Foundry Trait item here.");
 	return {
-		config: uC(n),
+		config: yC(n),
 		ignored: !1,
 		key: `custom:${n.uuid}`,
 		name: n.name,
@@ -11979,7 +12061,7 @@ async function CC(e) {
 }
 //#endregion
 //#region src/functions/npc-builder/recommended-quick-traits.ts
-var wC = [
+var NC = [
 	"Armour",
 	"Big",
 	"Brute",
@@ -12005,29 +12087,29 @@ var wC = [
 ];
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/folders.ts
-async function TC(e) {
-	return MC(await jC(e, "Actor"));
+async function PC(e) {
+	return VC(await BC(e, "Actor"));
 }
-async function EC(e) {
-	return MC(await jC(e, "Item"));
+async function FC(e) {
+	return VC(await BC(e, "Item"));
 }
-function DC() {
-	return game.folders.contents.filter((e) => e.type === "Actor").map(MC).sort((e, t) => e.name.localeCompare(t.name));
+function IC() {
+	return game.folders.contents.filter((e) => e.type === "Actor").map(VC).sort((e, t) => e.name.localeCompare(t.name));
 }
-function OC() {
-	return game.folders.contents.filter((e) => e.type === "Item").map(MC).sort((e, t) => e.name.localeCompare(t.name));
+function LC() {
+	return game.folders.contents.filter((e) => e.type === "Item").map(VC).sort((e, t) => e.name.localeCompare(t.name));
 }
-function kC(e) {
+function RC(e) {
 	return e ? game.folders.contents.find((t) => t.uuid === e) ?? null : null;
 }
-function AC(e) {
-	let t = kC(e);
+function zC(e) {
+	let t = RC(e);
 	return t?.type === "Item" ? t : null;
 }
-async function jC(e, t) {
+async function BC(e, t) {
 	let n = e.trim();
 	if (!n) throw Error("Enter a folder name first.");
-	let r = game.folders.contents.find((e) => e.type === t && NC(e.name, n));
+	let r = game.folders.contents.find((e) => e.type === t && HC(e.name, n));
 	if (r) return r;
 	let i = await Folder.create({
 		name: n,
@@ -12036,40 +12118,40 @@ async function jC(e, t) {
 	if (!i) throw Error("Foundry did not create the folder.");
 	return i;
 }
-function MC(e) {
+function VC(e) {
 	return {
 		name: e.name,
 		uuid: e.uuid
 	};
 }
-function NC(e, t) {
+function HC(e, t) {
 	return e.trim().toLocaleLowerCase() === t.trim().toLocaleLowerCase();
 }
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/traits/quick-traits.ts
-async function PC(e) {
-	let t = AC(e.quickTraitFolderUuid);
+async function UC(e) {
+	let t = zC(e.quickTraitFolderUuid);
 	if (!t) throw Error("Choose a Quick Traits item folder before importing traits.");
-	let n = new Set(LC(e).map((e) => e.name.trim().toLocaleLowerCase()));
-	for (let e of wC) {
+	let n = new Set(KC(e).map((e) => e.name.trim().toLocaleLowerCase()));
+	for (let e of NC) {
 		if (n.has(e.trim().toLocaleLowerCase())) continue;
-		let r = LS(await HS(e, ["trait"]), e, "trait");
+		let r = KS(await ZS(e, ["trait"]), e, "trait");
 		r.folder = t.id, r.type = "trait", await Item.create(r);
 	}
-	return ui.notifications?.info("Imported recommended quick traits."), await FC(e);
+	return ui.notifications?.info("Imported recommended quick traits."), await WC(e);
 }
-async function FC(e) {
-	return LC(e).map(RC).sort((e, t) => e.name.localeCompare(t.name));
+async function WC(e) {
+	return KC(e).map(qC).sort((e, t) => e.name.localeCompare(t.name));
 }
-function IC(e, t) {
+function GC(e, t) {
 	return t.quickTraitFolderUuid ? e.folder?.uuid === t.quickTraitFolderUuid : !1;
 }
-function LC(e) {
-	return game.items?.contents.filter((t) => t.type === "trait" && IC(t, e)) ?? [];
+function KC(e) {
+	return game.items?.contents.filter((t) => t.type === "trait" && GC(t, e)) ?? [];
 }
-function RC(e) {
+function qC(e) {
 	return {
-		config: uC(e),
+		config: yC(e),
 		img: e.img ?? "",
 		name: e.name,
 		uuid: e.uuid
@@ -12077,7 +12159,7 @@ function RC(e) {
 }
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/trappings.ts
-var zC = [
+var JC = [
 	"ammunition",
 	"armour",
 	"container",
@@ -12085,10 +12167,10 @@ var zC = [
 	"trapping",
 	"weapon"
 ];
-async function BC(e, t) {
-	let n = oC();
+async function YC(e, t) {
+	let n = hC();
 	for (let r of t) {
-		let t = r.source === "base" ? zS(e, r.sourceUuid, r.name) : null;
+		let t = r.source === "base" ? JS(e, r.sourceUuid, r.name) : null;
 		if (r.ignored) {
 			t && n.deletes.push(t.id);
 			continue;
@@ -12100,19 +12182,19 @@ async function BC(e, t) {
 			});
 			continue;
 		}
-		let i = await KC(r), a = r.resolution.selectedItemType || r.itemType || "trapping", o = LS(i, r.resolution.selectedName || r.name, a);
+		let i = await tw(r), a = r.resolution.selectedItemType || r.itemType || "trapping", o = KS(i, r.resolution.selectedName || r.name, a);
 		o.type = a || o.type || "trapping", Gs(o, [
 			"system",
 			"quantity",
 			"value"
 		], r.quantity), n.creates.push(o);
 	}
-	await sC(e, n);
+	await gC(e, n);
 }
-async function VC(e) {
-	return Ch(e, await qC());
+async function XC(e) {
+	return Ch(e, await nw());
 }
-async function HC(e) {
+async function ZC(e) {
 	let t = Wp(e);
 	if (t.type !== "Item" || !t.uuid) throw Error("Drop a Foundry Item here.");
 	let n = Hp(await fromUuid(t.uuid), "Drop a Foundry Item here.");
@@ -12121,7 +12203,7 @@ async function HC(e) {
 		itemType: n.type,
 		key: `custom:${n.uuid}`,
 		name: n.name,
-		quantity: WC(n),
+		quantity: $C(n),
 		resolution: xh({
 			itemType: n.type,
 			name: n.name,
@@ -12131,23 +12213,23 @@ async function HC(e) {
 		sourceUuid: n.uuid
 	};
 }
-function UC(e) {
-	let t = GC();
+function QC(e) {
+	let t = ew();
 	return e.items?.contents.filter((e) => t.includes(e.type)).map((e) => ({
 		itemType: e.type,
 		name: e.name,
-		quantity: WC(e),
+		quantity: $C(e),
 		uuid: e.uuid
 	})) ?? [];
 }
-function WC(e) {
+function $C(e) {
 	return Vs(e.system, [["quantity", "value"], ["quantity"]]) || 1;
 }
-function GC() {
+function ew() {
 	let e = Bs(game.wfrp4e?.config, ["trappingItems"]);
-	return e.length ? e : zC;
+	return e.length ? e : JC;
 }
-async function KC(e) {
+async function tw(e) {
 	if (e.sourceUuid) {
 		let t = await fromUuid(e.sourceUuid);
 		return Bp(t) ? t : null;
@@ -12156,33 +12238,33 @@ async function KC(e) {
 		let t = await fromUuid(e.resolution.selectedCandidateUuid);
 		return Bp(t) ? t : null;
 	}
-	return e.resolution.status === "fallback" ? null : await HS(e.resolution.selectedName || e.name, GC());
+	return e.resolution.status === "fallback" ? null : await ZS(e.resolution.selectedName || e.name, ew());
 }
-async function qC() {
-	let e = [], t = GC();
-	for (let n of game.items?.contents ?? []) t.includes(n.type) && e.push(YC(n, "World"));
+async function nw() {
+	let e = [], t = ew();
+	for (let n of game.items?.contents ?? []) t.includes(n.type) && e.push(iw(n, "World"));
 	for (let n of game.packs ?? []) {
-		if (!eS(n)) continue;
-		let r = await JC(n, t);
+		if (!sS(n)) continue;
+		let r = await rw(n, t);
 		if (r.length) {
 			e.push(...r);
 			continue;
 		}
 		if (!n.getDocuments) continue;
 		let i = await n.getDocuments();
-		for (let r of i) Bp(r) && t.includes(r.type) && e.push(YC(r, n.title ?? "Compendium"));
+		for (let r of i) Bp(r) && t.includes(r.type) && e.push(iw(r, n.title ?? "Compendium"));
 	}
 	return e;
 }
-async function JC(e, t) {
-	return e.getIndex ? ((await e.getIndex({ fields: ["name", "type"] })).contents ?? []).filter((n) => !!(n.name && n.type && $x(e, n) && t.includes(n.type))).map((t) => ({
+async function rw(e, t) {
+	return e.getIndex ? cS(await e.getIndex({ fields: ["name", "type"] })).filter((n) => !!(n.name && n.type && oS(e, n) && t.includes(n.type))).map((t) => ({
 		itemType: t.type ?? "trapping",
 		name: t.name ?? "",
 		sourceLabel: e.title ?? "Compendium",
-		uuid: $x(e, t)
+		uuid: oS(e, t)
 	})) : [];
 }
-function YC(e, t) {
+function iw(e, t) {
 	return {
 		itemType: e.type,
 		name: e.name,
@@ -12192,39 +12274,39 @@ function YC(e, t) {
 }
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/actors.ts
-function XC(e) {
-	return game.actors.contents.filter((t) => nw(t, e)).map($C);
+function aw(e) {
+	return game.actors.contents.filter((t) => dw(t, e)).map(cw);
 }
-async function ZC(e) {
+async function ow(e) {
 	let t = Vp(await fromUuid(e));
 	return {
 		advancements: [
-			...eC(t),
-			...tC(t, "skill"),
-			...tC(t, "talent")
+			...lC(t),
+			...uC(t, "skill"),
+			...uC(t, "talent")
 		],
-		optionalTraits: vC(t),
-		traits: _C(t),
-		trappings: UC(t)
+		optionalTraits: DC(t),
+		traits: EC(t),
+		trappings: QC(t)
 	};
 }
-async function QC(e) {
+async function sw(e) {
 	let t = Wp(e);
 	if (t.type !== "Actor") throw Error("Drop a Foundry Actor here.");
 	let n = null;
-	return t.uuid ? n = await fromUuid(t.uuid) : t.id && (n = game.actors.get(t.id)), $C(Vp(n));
+	return t.uuid ? n = await fromUuid(t.uuid) : t.id && (n = game.actors.get(t.id)), cw(Vp(n));
 }
-function $C(e) {
+function cw(e) {
 	return {
 		img: e.img ?? "",
 		name: e.name,
-		prototypeTokenImg: tw(e),
-		species: ew(e),
+		prototypeTokenImg: uw(e),
+		species: lw(e),
 		type: e.type,
 		uuid: e.uuid
 	};
 }
-function ew(e) {
+function lw(e) {
 	return Z(e.system, [
 		"details",
 		"species",
@@ -12239,7 +12321,7 @@ function ew(e) {
 		"value"
 	]);
 }
-function tw(e) {
+function uw(e) {
 	return Z(e, [
 		"prototypeToken",
 		"texture",
@@ -12250,14 +12332,14 @@ function tw(e) {
 		"src"
 	]);
 }
-function nw(e, t) {
+function dw(e, t) {
 	return t.baseActorFolderUuid ? e.folder?.uuid === t.baseActorFolderUuid : !0;
 }
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/magic/constants.ts
-var rw = "spell", iw = new Set(ah), aw = new Set(oh);
-async function ow() {
-	return sw().map((e) => ({
+var fw = "spell", pw = new Set(ah), mw = new Set(oh);
+async function hw() {
+	return gw().map((e) => ({
 		category: dh(e.key),
 		key: e.key,
 		label: e.name,
@@ -12265,45 +12347,45 @@ async function ow() {
 		wind: e.wind
 	})).sort((e, t) => e.category === t.category ? e.label.localeCompare(t.label) : e.category.localeCompare(t.category));
 }
-function sw() {
+function gw() {
 	let e = X(game.wfrp4e?.config, ["magicLores"]), t = X(game.wfrp4e?.config, ["magicWind"]), n = [];
-	if (!Y(e)) return [dw()];
+	if (!Y(e)) return [bw()];
 	for (let [r, i] of Object.entries(e)) {
-		let e = vw(i) || r, a = _w(t, r);
+		let e = Dw(i) || r, a = Ew(t, r);
 		n.push({
 			key: r,
-			matchTerms: gw(r, e, a),
+			matchTerms: Tw(r, e, a),
 			name: e,
 			wind: a
 		});
 	}
-	return n.some((e) => e.key === "petty") || n.push(dw()), n;
+	return n.some((e) => e.key === "petty") || n.push(bw()), n;
 }
-function cw(e, t) {
+function _w(e, t) {
 	let n = /* @__PURE__ */ new Map();
 	for (let r of e) {
 		if (r.isAmbiguous) continue;
 		if (r.kind === "petty-magic") {
-			let e = hw("petty magic", t);
+			let e = ww("petty magic", t);
 			e && n.set(e.key, e);
 			continue;
 		}
-		let e = hw(r.rawLore, t);
+		let e = ww(r.rawLore, t);
 		e && n.set(e.key, e);
 	}
 	return [...n.values()];
 }
-function lw(e, t) {
-	let n = [...uw(e.system), mw(e.name)].filter(Boolean);
+function vw(e, t) {
+	let n = [...yw(e.system), Cw(e.name)].filter(Boolean);
 	for (let e of n) {
-		let n = pw(e, t);
+		let n = Sw(e, t);
 		if (n) return n;
-		let r = hw(e, t);
+		let r = ww(e, t);
 		if (r) return r;
 	}
 	return null;
 }
-function uw(e) {
+function yw(e) {
 	return [
 		...Ws(X(e, ["lore", "value"])),
 		...Ws(X(e, ["lore"])),
@@ -12320,7 +12402,7 @@ function uw(e) {
 		...Ws(X(e, ["system.lore"]))
 	];
 }
-function dw() {
+function bw() {
 	return {
 		key: "petty",
 		matchTerms: ["petty", "petty magic"],
@@ -12328,7 +12410,7 @@ function dw() {
 		wind: ""
 	};
 }
-function fw(e) {
+function xw(e) {
 	let t = e.trim() || "Unknown Lore";
 	return {
 		key: ch(t) || "unknown",
@@ -12337,18 +12419,18 @@ function fw(e) {
 		wind: ""
 	};
 }
-function pw(e, t) {
+function Sw(e, t) {
 	let n = ch(e);
-	return n === "lore" ? t.find((e) => e.key !== "petty") ?? null : n === "the eight winds" || n === "eight winds" ? t.find((e) => iw.has(e.key)) ?? null : n === "dark lore" ? t.find((e) => aw.has(e.key)) ?? null : null;
+	return n === "lore" ? t.find((e) => e.key !== "petty") ?? null : n === "the eight winds" || n === "eight winds" ? t.find((e) => pw.has(e.key)) ?? null : n === "dark lore" ? t.find((e) => mw.has(e.key)) ?? null : null;
 }
-function mw(e) {
+function Cw(e) {
 	return /\(([^)]+)\)\s*$/.exec(e)?.[1]?.trim() ?? "";
 }
-function hw(e, t) {
+function ww(e, t) {
 	let n = ch(e);
 	return n ? t.find((e) => e.matchTerms.some((e) => ch(e) === n)) ?? null : null;
 }
-function gw(e, t, n) {
+function Tw(e, t, n) {
 	let r = /* @__PURE__ */ new Set(), i = ch(e), a = ch(t);
 	for (let i of [
 		e,
@@ -12357,26 +12439,26 @@ function gw(e, t, n) {
 	]) i.trim() && r.add(i.trim());
 	return (i === "petty" || a === "petty") && r.add("Petty Magic"), (i === "shadow" || a === "shadow") && r.add("Shadows"), t && !/^lore of /i.test(t) && r.add(`Lore of ${t}`), [...r];
 }
-function _w(e, t) {
-	return Y(e) ? vw(e[t]) : "";
+function Ew(e, t) {
+	return Y(e) ? Dw(e[t]) : "";
 }
-function vw(e) {
+function Dw(e) {
 	return typeof e == "string" ? e.trim() : Y(e) ? Z(e, ["name"]) || Z(e, ["label"]) || Z(e, ["value"]) : "";
 }
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/magic/debug.ts
-var yw = "[WFRP Customizer Apps][Spell Lookup]";
-function bw(t, n) {
+var Ow = "[WFRP Customizer Apps][Spell Lookup]";
+function kw(t, n) {
 	if (n) {
-		e(`${yw} ${t}`, n);
+		e(`${Ow} ${t}`, n);
 		return;
 	}
-	e(`${yw} ${t}`);
+	e(`${Ow} ${t}`);
 }
-function xw(e, n) {
-	t(`${yw} ${e}`, n);
+function Aw(e, n) {
+	t(`${Ow} ${e}`, n);
 }
-function Sw(e) {
+function jw(e) {
 	return [
 		e.title ?? "",
 		e.collection ?? "",
@@ -12385,22 +12467,22 @@ function Sw(e) {
 		e.documentName
 	].filter(Boolean).join(" | ");
 }
-function Cw(e) {
+function Mw(e) {
 	return {
-		loreTerms: uw(e.system),
+		loreTerms: yw(e.system),
 		name: e.name,
 		sourceLabel: e.sourceLabel,
 		uuid: e.uuid
 	};
 }
-function ww(e) {
+function Nw(e) {
 	return typeof e == "string" ? {
 		kind: "uuid-string",
 		value: e
 	} : Y(e) ? {
 		documentName: Z(e, ["documentName"]),
 		hasSystem: Y(X(e, ["system"])),
-		loreTerms: uw(X(e, ["system"])),
+		loreTerms: yw(X(e, ["system"])),
 		name: Z(e, ["name"]),
 		type: Z(e, ["type"]),
 		uuid: Z(e, ["uuid"])
@@ -12408,7 +12490,7 @@ function ww(e) {
 }
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/magic/spell-input-conversion.ts
-function Tw(e, t) {
+function Pw(e, t) {
 	return {
 		img: e.img ?? "",
 		name: e.name,
@@ -12417,118 +12499,106 @@ function Tw(e, t) {
 		uuid: e.uuid
 	};
 }
-function Ew(e) {
-	return /^item\./i.test(e.uuid) ? "World" : Dw(e.uuid, "WFRP Item Lookup");
+function Fw(e) {
+	return /^item\./i.test(e.uuid) ? "World" : Iw(e.uuid, "WFRP Item Lookup");
 }
-function Dw(e, t) {
+function Iw(e, t) {
 	let n = /^Compendium\.([^.]+\.[^.]+)\./.exec(e)?.[1];
 	return n ? [...game.packs ?? []].find((e) => e.collection === n)?.title ?? n : t;
 }
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/magic/compendium-spell-inputs.ts
-async function Ow(e) {
-	if (bw("Compendium index scan start", { pack: Sw(e) }), !e.getIndex) return bw("Compendium has no index; loading documents", { pack: Sw(e) }), await Pw(e);
-	let t = Aw(await e.getIndex({ fields: [
+async function Lw(e) {
+	if (kw("Compendium index scan start", { pack: jw(e) }), !e.getIndex) return kw("Compendium has no index; loading documents", { pack: jw(e) }), await Bw(e);
+	let t = cS(await e.getIndex({ fields: [
 		"name",
 		"type",
 		"img",
 		"system.lore.value"
 	] }));
-	if (bw("Compendium index loaded", {
+	if (kw("Compendium index loaded", {
 		entries: t.length,
-		pack: Sw(e),
+		pack: jw(e),
 		samples: t.slice(0, 5).map((t) => ({
-			hasLoreTerms: uw(t).length > 0,
+			hasLoreTerms: yw(t).length > 0,
 			name: t.name,
 			type: t.type,
-			uuid: $x(e, t)
+			uuid: oS(e, t)
 		}))
-	}), !t.length) return bw("Compendium index empty; loading documents", { pack: Sw(e) }), await Pw(e);
-	let n = t.filter(Mw);
-	bw("Compendium index spell candidates", {
-		pack: Sw(e),
+	}), !t.length) return kw("Compendium index empty; loading documents", { pack: jw(e) }), await Bw(e);
+	let n = t.filter(zw);
+	kw("Compendium index spell candidates", {
+		pack: jw(e),
 		spellEntries: n.length
 	});
-	let r = n.filter((e) => e.name).map((t) => Iw(e, t));
-	return r.length || !Fw(e) ? r : await Pw(e);
+	let r = n.filter((e) => e.name).map((t) => Hw(e, t));
+	return r.length || !Vw(e) ? r : await Bw(e);
 }
-function kw(e) {
-	return eS(e);
+function Rw(e) {
+	return sS(e);
 }
-function Aw(e) {
-	return Array.isArray(e) ? e.filter(jw) : Array.isArray(e.contents) ? e.contents.filter(jw) : Nw(e) ? [...e].flatMap((e) => {
-		let t = Array.isArray(e) ? e[1] : e;
-		return jw(t) ? [t] : [];
-	}) : [];
+function zw(e) {
+	return e.type === "spell" ? !0 : !!(e.name && (yw(e).length || Cw(e.name)));
 }
-function jw(e) {
-	return Y(e);
-}
-function Mw(e) {
-	return e.type === "spell" ? !0 : !!(e.name && (uw(e).length || mw(e.name)));
-}
-function Nw(e) {
-	return Y(e) && Symbol.iterator in e;
-}
-async function Pw(e) {
-	if (!e.getDocuments) return bw("Compendium has no document loader", { pack: Sw(e) }), [];
-	bw("Compendium document load start", { pack: Sw(e) });
+async function Bw(e) {
+	if (!e.getDocuments) return kw("Compendium has no document loader", { pack: jw(e) }), [];
+	kw("Compendium document load start", { pack: jw(e) });
 	let t = await e.getDocuments(), n = t.filter((e) => Bp(e) && e.type === "spell");
-	return bw("Compendium document load complete", {
+	return kw("Compendium document load complete", {
 		documents: t.length,
-		pack: Sw(e),
+		pack: jw(e),
 		spellDocuments: n.length,
 		spellSamples: n.slice(0, 5).map((e) => ({
-			loreTerms: uw(e.system),
+			loreTerms: yw(e.system),
 			name: e.name,
 			uuid: e.uuid
 		}))
-	}), n.map((t) => Tw(t, e.title ?? "Compendium"));
+	}), n.map((t) => Pw(t, e.title ?? "Compendium"));
 }
-function Fw(e) {
+function Vw(e) {
 	return e.collection === "wfrp4e-core.items" || e.collection === "wfrp4e-wom.items";
 }
-function Iw(e, t) {
+function Hw(e, t) {
 	return {
 		img: t.img ?? t.thumb ?? "",
 		name: t.name ?? "",
 		sourceLabel: e.title ?? "Compendium",
 		system: t,
-		uuid: $x(e, t)
+		uuid: oS(e, t)
 	};
 }
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/magic/warhammer-spell-inputs.ts
-async function Lw() {
-	let e = zw();
-	if (!e) return bw("WFRP helper unavailable"), [];
+async function Uw() {
+	let e = Gw();
+	if (!e) return kw("WFRP helper unavailable"), [];
 	try {
-		let t = await e.findAllItems(rw, "Loading Spells", !0, ["system.lore.value"]);
-		return bw("WFRP helper raw result", {
+		let t = await e.findAllItems(fw, "Loading Spells", !0, ["system.lore.value"]);
+		return kw("WFRP helper raw result", {
 			count: t.length,
-			samples: t.slice(0, 10).map(ww)
-		}), (await Promise.all(t.map((e) => Rw(e)))).filter((e) => e !== null);
+			samples: t.slice(0, 10).map(Nw)
+		}), (await Promise.all(t.map((e) => Ww(e)))).filter((e) => e !== null);
 	} catch (e) {
-		return xw("WFRP helper lookup failed.", e), [];
+		return Aw("WFRP helper lookup failed.", e), [];
 	}
 }
-async function Rw(e) {
+async function Ww(e) {
 	if (typeof e == "string") {
 		let t = await fromUuid(e);
-		return Bp(t) && t.type === "spell" ? Tw(t, Ew(t)) : null;
+		return Bp(t) && t.type === "spell" ? Pw(t, Fw(t)) : null;
 	}
-	if (Bp(e)) return e.type === "spell" ? Tw(e, Ew(e)) : null;
+	if (Bp(e)) return e.type === "spell" ? Pw(e, Fw(e)) : null;
 	if (Z(e, ["type"]) !== "spell") return null;
 	let t = Z(e, ["name"]);
 	return t ? {
 		img: Z(e, ["img"]) || Z(e, ["thumb"]),
 		name: t,
-		sourceLabel: Dw(Z(e, ["uuid"]), "WFRP Item Lookup"),
+		sourceLabel: Iw(Z(e, ["uuid"]), "WFRP Item Lookup"),
 		system: X(e, ["system"]),
 		uuid: Z(e, ["uuid"])
 	} : null;
 }
-function zw() {
+function Gw() {
 	let e = X(globalThis, [
 		"warhammer",
 		"utility",
@@ -12538,41 +12608,41 @@ function zw() {
 }
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/magic/spell-resolution-inputs.ts
-async function Bw() {
+async function Kw() {
 	let e = [], n = [...game.packs ?? []];
-	bw("Candidate lookup start", {
-		itemPacks: n.filter(kw).length,
+	kw("Candidate lookup start", {
+		itemPacks: n.filter(Rw).length,
 		totalPacks: n.length,
-		warhammerUtilityAvailable: !!Uw(),
+		warhammerUtilityAvailable: !!Yw(),
 		worldItems: game.items?.contents.length ?? 0
 	});
-	let r = await Lw();
-	bw("WFRP helper lookup complete", {
+	let r = await Uw();
+	kw("WFRP helper lookup complete", {
 		utilityInputs: r.length,
-		utilitySamples: r.slice(0, 10).map(Cw)
-	}), e.push(...r), e.push(...Vw()), bw("World spell scan complete", { worldSpellCount: e.filter((e) => e.sourceLabel === "World").length });
-	for (let r of n) if (kw(r)) try {
-		let t = await Ow(r);
-		e.push(...t), bw("Compendium spell scan complete", {
+		utilitySamples: r.slice(0, 10).map(Mw)
+	}), e.push(...r), e.push(...qw()), kw("World spell scan complete", { worldSpellCount: e.filter((e) => e.sourceLabel === "World").length });
+	for (let r of n) if (Rw(r)) try {
+		let t = await Lw(r);
+		e.push(...t), kw("Compendium spell scan complete", {
 			inputCount: t.length,
-			pack: Sw(r),
-			samples: t.slice(0, 5).map(Cw)
+			pack: jw(r),
+			samples: t.slice(0, 5).map(Mw)
 		});
 	} catch (e) {
 		t(`wfrp4e-customizer-apps | Spell lookup skipped compendium "${r.title ?? r.collection ?? "unknown"}".`, e);
 	}
-	let i = Hw(e);
-	return bw("Candidate lookup complete", {
+	let i = Jw(e);
+	return kw("Candidate lookup complete", {
 		rawInputCount: e.length,
 		uniqueInputCount: i.length
 	}), i;
 }
-function Vw() {
+function qw() {
 	let e = [];
-	for (let t of game.items?.contents ?? []) t.type === "spell" && e.push(Tw(t, "World"));
+	for (let t of game.items?.contents ?? []) t.type === "spell" && e.push(Pw(t, "World"));
 	return e;
 }
-function Hw(e) {
+function Jw(e) {
 	let t = /* @__PURE__ */ new Map();
 	for (let n of e) {
 		let e = n.uuid || n.name.trim().toLocaleLowerCase();
@@ -12580,7 +12650,7 @@ function Hw(e) {
 	}
 	return [...t.values()];
 }
-function Uw() {
+function Yw() {
 	return X(globalThis, [
 		"warhammer",
 		"utility",
@@ -12589,18 +12659,18 @@ function Uw() {
 }
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/magic/index.ts
-async function Ww(e, t) {
+async function Xw(e, t) {
 	let n = [];
 	for (let r of t) {
-		if (!r.selected || RS(e, r.name, "spell")) continue;
-		let t = LS(r.sourceUuid ? await qw(r.sourceUuid) : null, r.name, rw);
-		t.type = rw, n.push(t);
+		if (!r.selected || qS(e, r.name, "spell")) continue;
+		let t = KS(r.sourceUuid ? await $w(r.sourceUuid) : null, r.name, fw);
+		t.type = fw, n.push(t);
 	}
 	n.length && await e.createEmbeddedDocuments("Item", n);
 }
-async function Gw(e) {
-	let t = cw(e, sw());
-	if (bw("Grant resolution start", {
+async function Zw(e) {
+	let t = _w(e, gw());
+	if (kw("Grant resolution start", {
 		grants: e.map((e) => ({
 			isAmbiguous: e.isAmbiguous,
 			kind: e.kind,
@@ -12614,12 +12684,12 @@ async function Gw(e) {
 			wind: e.wind
 		}))
 	}), !t.length) return [];
-	let n = await Bw(), r = /* @__PURE__ */ new Map(), i = [];
+	let n = await Kw(), r = /* @__PURE__ */ new Map(), i = [];
 	for (let e of n) {
-		let n = lw(e, t);
+		let n = vw(e, t);
 		if (!n) {
 			i.length < 20 && i.push({
-				loreTerms: uw(e.system),
+				loreTerms: yw(e.system),
 				name: e.name,
 				sourceLabel: e.sourceLabel,
 				uuid: e.uuid
@@ -12639,7 +12709,7 @@ async function Gw(e) {
 			sourceUuid: e.uuid
 		});
 	}
-	return bw("Grant resolution complete", {
+	return kw("Grant resolution complete", {
 		candidateCount: n.length,
 		matchedSpellCount: r.size,
 		matchedSpellSamples: [...r.values()].slice(0, 10).map((e) => ({
@@ -12651,10 +12721,10 @@ async function Gw(e) {
 		unmatchedLoreSamples: i
 	}), [...r.values()].sort((e, t) => e.loreName === t.loreName ? e.name.localeCompare(t.name) : e.loreName.localeCompare(t.loreName));
 }
-async function Kw(e) {
+async function Qw(e) {
 	let t = Wp(e);
 	if (t.type !== "Item" || !t.uuid) throw Error("Drop a Foundry Spell item here.");
-	let n = Up(await fromUuid(t.uuid), rw, "Drop a Foundry Spell item here."), r = lw(Tw(n, "Dropped"), [...sw(), dw()]) ?? fw(uw(n.system)[0] ?? "");
+	let n = Up(await fromUuid(t.uuid), fw, "Drop a Foundry Spell item here."), r = vw(Pw(n, "Dropped"), [...gw(), bw()]) ?? xw(yw(n.system)[0] ?? "");
 	return {
 		img: n.img ?? "",
 		key: `custom:${n.uuid}`,
@@ -12667,31 +12737,31 @@ async function Kw(e) {
 		sourceUuid: n.uuid
 	};
 }
-async function qw(e) {
+async function $w(e) {
 	let t = await fromUuid(e);
 	return Bp(t) && t.type === "spell" ? t : null;
 }
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/build-npc.ts
-async function Jw(e) {
-	let t = await Zw(e);
+async function eT(e) {
+	let t = await rT(e);
 	if (!t) throw Error("Foundry did not create the NPC Actor.");
-	let n = Qw(e), r = e.careers.at(-1), i = um(e.advancements), a = {
+	let n = iT(e), r = e.careers.at(-1), i = um(e.advancements), a = {
 		name: n,
 		"prototypeToken.name": n,
-		"system.details.gmnotes.value": Yw(Z(t.system, [
+		"system.details.gmnotes.value": tT(Z(t.system, [
 			"details",
 			"gmnotes",
 			"value"
 		]), i)
 	}, o = e.portraitPath || r?.img || "";
-	return o && (a.img = o, a["prototypeToken.texture.src"] = o), await t.update(a), await $S(t, e.advancements), await hC(t, e.traits), await BC(t, e.trappings), await Ww(t, e.spells), t.sheet?.render(!0), ui.notifications?.info(`Created NPC "${n}".`), {
+	return o && (a.img = o, a["prototypeToken.texture.src"] = o), await t.update(a), await cC(t, e.advancements), await wC(t, e.traits), await YC(t, e.trappings), await Xw(t, e.spells), t.sheet?.render(!0), ui.notifications?.info(`Created NPC "${n}".`), {
 		name: n,
 		uuid: t.uuid
 	};
 }
-function Yw(e, t) {
-	let n = Xw(e).trim(), r = [
+function tT(e, t) {
+	let n = nT(e).trim(), r = [
 		"<section data-wfrp-customizer-npc-xp=\"true\">",
 		"<h3>WFRP Customizer Apps</h3>",
 		`<p><strong>Estimated NPC XP:</strong> ${t.total}</p>`,
@@ -12704,41 +12774,41 @@ function Yw(e, t) {
 	].join("");
 	return n ? `${n}<hr>${r}` : r;
 }
-function Xw(e) {
+function nT(e) {
 	return e.replaceAll(/<section data-wfrp-customizer-npc-xp="true">[\S\s]*?<\/section>/g, "");
 }
-async function Zw(e) {
-	let t = Vp(await fromUuid(e.baseActorUuid)).toObject(), n = kC(e.settings.outputActorFolderUuid);
-	return delete t._id, delete t.folder, t.type = "npc", yC(t), n && (t.folder = n.id), await Actor.create(t);
+async function rT(e) {
+	let t = Vp(await fromUuid(e.baseActorUuid)).toObject(), n = RC(e.settings.outputActorFolderUuid);
+	return delete t._id, delete t.folder, t.type = "npc", OC(t), n && (t.folder = n.id), await Actor.create(t);
 }
-function Qw(e) {
+function iT(e) {
 	if (!e.settings.includeSpeciesInName) return e.actorName;
-	let t = game.actors.contents.find((t) => t.uuid === e.baseActorUuid), n = t ? ew(t) : "";
+	let t = game.actors.contents.find((t) => t.uuid === e.baseActorUuid), n = t ? lw(t) : "";
 	return !n || e.actorName.toLocaleLowerCase().includes(n.toLocaleLowerCase()) ? e.actorName : `${n} ${e.actorName}`;
 }
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/careers.ts
-async function $w(e) {
+async function aT(e) {
 	let t = Wp(e);
 	if (t.type !== "Item" || !t.uuid) throw Error("Drop a WFRP Career item here.");
-	return uS(Up(await fromUuid(t.uuid), "career", "Drop a WFRP Career item here."));
+	return fS(Up(await fromUuid(t.uuid), "career", "Drop a WFRP Career item here."));
 }
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/portraits/candidate-utils.ts
-function eT(e, t) {
+function oT(e, t) {
 	let n = t.img.trim().toLocaleLowerCase();
 	!n || e.seenPaths.has(n) || (e.seenPaths.add(n), e.candidates.push(t));
 }
-function tT(e, t) {
+function sT(e, t) {
 	let n = t.imagePaths.filter(({ path: e }) => !!e);
-	if (cT(t.name, n, e.searchTerms)) for (let r of n) eT(e, {
+	if (mT(t.name, n, e.searchTerms)) for (let r of n) oT(e, {
 		img: r.path,
 		key: `foundry-asset:${t.sourceKey}:${r.label}`,
-		label: `${t.name || aT(r.path)} ${r.label} (${t.sourceLabel})`,
+		label: `${t.name || dT(r.path)} ${r.label} (${t.sourceLabel})`,
 		source: "foundry-asset"
 	});
 }
-function nT(e, t, n) {
+function cT(e, t, n) {
 	e?.({
 		candidatesFound: t.candidates.length,
 		currentLocation: n.currentLocation,
@@ -12747,7 +12817,7 @@ function nT(e, t, n) {
 		phase: n.phase
 	});
 }
-function rT(e) {
+function lT(e) {
 	return Z(e, [
 		"prototypeToken",
 		"texture",
@@ -12758,49 +12828,49 @@ function rT(e) {
 		"src"
 	]);
 }
-function iT(e, t) {
-	return `${aT(e)} (${t})`;
+function uT(e, t) {
+	return `${dT(e)} (${t})`;
 }
-function aT(e) {
+function dT(e) {
 	return e.split(/[/\\]/).at(-1) ?? e;
 }
-function oT(e) {
+function fT(e) {
 	return typeof e == "object" && !!e;
 }
-function sT(e) {
-	return oT(e) && Object.values(e).every((e) => Array.isArray(e) && e.every((e) => typeof e == "string"));
+function pT(e) {
+	return fT(e) && Object.values(e).every((e) => Array.isArray(e) && e.every((e) => typeof e == "string"));
 }
-function cT(e, t, n) {
+function mT(e, t, n) {
 	return Ev(e, n) || t.some(({ path: e }) => Ev(e, n));
 }
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/portraits/dig-down.ts
-var lT = "fuzzy-foundry", uT = .3, dT = new Set([
+var hT = "fuzzy-foundry", gT = .3, _T = new Set([
 	".webp",
 	".png",
 	".jpg",
 	".jpeg",
 	".gif"
 ]);
-function fT(e, t) {
-	let n = pT();
-	if (nT(t, e, {
-		currentLocation: hT(n),
+function vT(e, t) {
+	let n = yT();
+	if (cT(t, e, {
+		currentLocation: xT(n),
 		maxDirectories: 0,
 		phase: "filesystem"
 	}), !n.digDownActive || !n.digDownCacheReady) return;
-	let r = vT();
+	let r = wT();
 	if (!(!r?._fileIndexCache || !r.fs)) {
-		for (let t of gT(r, e.searchTerms)) _T(e, r, t);
-		nT(t, e, {
+		for (let t of ST(r, e.searchTerms)) CT(e, r, t);
+		cT(t, e, {
 			currentLocation: "Dig Down file cache search complete",
 			maxDirectories: 0,
 			phase: "filesystem"
 		});
 	}
 }
-function pT() {
-	let e = game.modules.get(lT)?.active === !0, t = mT(), n = vT(), r = Object.values(n?._fileIndexCache ?? {}).reduce((e, t) => e + t.length, 0);
+function yT() {
+	let e = game.modules.get(hT)?.active === !0, t = bT(), n = wT(), r = Object.values(n?._fileIndexCache ?? {}).reduce((e, t) => e + t.length, 0);
 	return {
 		digDownActive: e,
 		digDownCacheReady: !!(n?._fileIndexCache && n.fs),
@@ -12808,66 +12878,66 @@ function pT() {
 		digDownIndexedFileCount: r
 	};
 }
-function mT() {
+function bT() {
 	try {
-		return game.settings.get(lT, "deepFile") === !0;
+		return game.settings.get(hT, "deepFile") === !0;
 	} catch {
 		return !1;
 	}
 }
-function hT(e) {
+function xT(e) {
 	return e.digDownActive ? e.digDownDeepFileSearchEnabled ? e.digDownCacheReady ? `Dig Down file cache (${e.digDownIndexedFileCount} files)` : "Waiting for Dig Down file cache" : "Dig Down Deep File Search is disabled" : "Dig Down is not active";
 }
-function gT(e, t) {
+function ST(e, t) {
 	let n = /* @__PURE__ */ new Set(), r = Object.keys(e._fileIndexCache ?? {});
 	for (let i of t) {
 		let t = i.toLocaleLowerCase();
 		for (let e of r) e.toLocaleLowerCase().includes(t) && n.add(e);
-		let a = e.fs?.get(i, [], uT) ?? [];
+		let a = e.fs?.get(i, [], gT) ?? [];
 		for (let [, e] of a) n.add(e);
 	}
 	return [...n].sort((e, t) => e.toLocaleLowerCase().localeCompare(t.toLocaleLowerCase()));
 }
-function _T(e, t, n) {
+function CT(e, t, n) {
 	let r = t._fileIndexCache?.[n] ?? [];
-	for (let t of r) yT(t) && eT(e, {
+	for (let t of r) TT(t) && oT(e, {
 		img: t,
 		key: `foundry-asset:${t}`,
-		label: iT(t, "Dig Down"),
+		label: uT(t, "Dig Down"),
 		source: "foundry-asset"
 	});
 }
-function vT() {
+function wT() {
 	let e = canvas.deepSearchCache;
-	if (!oT(e)) return null;
+	if (!fT(e)) return null;
 	let t = e._fileIndexCache, n = e.fs, r = {};
-	return sT(t) && (r._fileIndexCache = t), oT(n) && typeof n.get == "function" && (r.fs = { get: n.get.bind(n) }), r;
+	return pT(t) && (r._fileIndexCache = t), fT(n) && typeof n.get == "function" && (r.fs = { get: n.get.bind(n) }), r;
 }
-function yT(e) {
+function TT(e) {
 	let t = `.${e.split(/[#?]/)[0]?.split(".").pop() ?? ""}`;
-	return dT.has(t.toLocaleLowerCase());
+	return _T.has(t.toLocaleLowerCase());
 }
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/portraits/documents.ts
-function bT(e, t) {
-	nT(t, e, {
+function ET(e, t) {
+	cT(t, e, {
 		currentLocation: "World Actors and Items",
 		maxDirectories: 0,
 		phase: "world-documents"
 	});
-	for (let t of game.actors.contents) tT(e, {
+	for (let t of game.actors.contents) sT(e, {
 		imagePaths: [{
 			label: "actor image",
 			path: t.img ?? ""
 		}, {
 			label: "token image",
-			path: rT(t)
+			path: lT(t)
 		}],
 		name: t.name,
 		sourceLabel: "World Actors",
 		sourceKey: t.uuid
 	});
-	for (let t of game.items?.contents ?? []) tT(e, {
+	for (let t of game.items?.contents ?? []) sT(e, {
 		imagePaths: [{
 			label: "item image",
 			path: t.img ?? ""
@@ -12877,8 +12947,8 @@ function bT(e, t) {
 		sourceKey: t.uuid
 	});
 }
-async function xT(e, t) {
-	nT(t, e, {
+async function DT(e, t) {
+	cT(t, e, {
 		currentLocation: "Actor and Item compendiums",
 		maxDirectories: 0,
 		phase: "compendiums"
@@ -12890,35 +12960,35 @@ async function xT(e, t) {
 			"img",
 			"thumb",
 			"prototypeToken.texture.src"
-		] }).catch(() => void 0);
-		for (let r of n?.contents ?? []) tT(e, {
+		] }).catch(() => void 0), r = n ? cS(n) : [];
+		for (let n of r) sT(e, {
 			imagePaths: [
 				{
 					label: `${t.documentName.toLocaleLowerCase()} image`,
-					path: r.img ?? ""
+					path: n.img ?? ""
 				},
 				{
 					label: "thumbnail",
-					path: r.thumb ?? ""
+					path: n.thumb ?? ""
 				},
 				{
 					label: "token image",
-					path: Z(r, [
+					path: Z(n, [
 						"prototypeToken",
 						"texture",
 						"src"
 					])
 				}
 			],
-			name: r.name ?? "",
+			name: n.name ?? "",
 			sourceLabel: t.title ?? "Compendium",
-			sourceKey: `${t.collection ?? t.title ?? "pack"}:${r._id ?? r.name ?? ""}`
+			sourceKey: `${t.collection ?? t.title ?? "pack"}:${n._id ?? n.name ?? ""}`
 		});
 	}
 }
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/portraits/index.ts
-async function ST(e, t) {
+async function OT(e, t) {
 	let n = Tv(e);
 	if (!n.length) return [];
 	let r = {
@@ -12928,7 +12998,7 @@ async function ST(e, t) {
 		seenPaths: /* @__PURE__ */ new Set(),
 		visitedDirectories: 0
 	};
-	return e.includeCompendiumAssets && (bT(r, t), await xT(r, t)), e.includeFilePickerAssets && fT(r, t), nT(t, r, {
+	return e.includeCompendiumAssets && (ET(r, t), await DT(r, t)), e.includeFilePickerAssets && vT(r, t), cT(t, r, {
 		currentLocation: "Portrait search complete",
 		maxDirectories: r.maxDirectoryBudget,
 		phase: "ready"
@@ -12936,34 +13006,34 @@ async function ST(e, t) {
 }
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/index.ts
-var CT = {
-	buildNpc: Jw,
-	ensureActorFolder: TC,
-	ensureItemFolder: EC,
-	findLowerCareerCandidates: _S,
-	getPortraitSearchAvailability: async () => pT(),
-	importRecommendedQuickTraits: PC,
-	listActorFolders: async () => DC(),
-	listBaseActors: async (e) => XC(e),
-	listFoundryPortraitCandidates: ST,
-	listMagicLoreOptions: ow,
-	listSpellsForMagicGrants: Gw,
-	listItemFolders: async () => OC(),
-	listQuickTraits: FC,
-	listSkillCharacteristics: kS,
-	listSkillSpecializations: OS,
-	listTalentMaximums: US,
-	listTraitDifficultyOptions: SC,
-	loadBaseActorDraftData: ZC,
-	loadSettings: async () => YS(),
-	resolveActorDrop: QC,
-	resolveCareerDrop: $w,
-	resolveSpellDrop: Kw,
-	resolveTraitDrop: CC,
-	resolveTrapping: VC,
-	resolveTrappingDrop: HC,
-	saveSettings: XS
-}, wT = class extends Rp {
+var kT = {
+	buildNpc: eT,
+	ensureActorFolder: PC,
+	ensureItemFolder: FC,
+	findLowerCareerCandidates: bS,
+	getPortraitSearchAvailability: async () => yT(),
+	importRecommendedQuickTraits: UC,
+	listActorFolders: async () => IC(),
+	listBaseActors: async (e) => aw(e),
+	listFoundryPortraitCandidates: OT,
+	listMagicLoreOptions: hw,
+	listSpellsForMagicGrants: Zw,
+	listItemFolders: async () => LC(),
+	listQuickTraits: WC,
+	listSkillCharacteristics: IS,
+	listSkillSpecializations: FS,
+	listTalentMaximums: QS,
+	listTraitDifficultyOptions: jC,
+	loadBaseActorDraftData: ow,
+	loadSettings: async () => iC(),
+	resolveActorDrop: sw,
+	resolveCareerDrop: aT,
+	resolveSpellDrop: Qw,
+	resolveTraitDrop: MC,
+	resolveTrapping: XC,
+	resolveTrappingDrop: ZC,
+	saveSettings: aC
+}, AT = class extends Rp {
 	static DEFAULT_OPTIONS = {
 		...super.DEFAULT_OPTIONS,
 		id: `${$}-npc-builder`,
@@ -12982,49 +13052,49 @@ var CT = {
 		return Qx;
 	}
 	getVueProps() {
-		return { bridge: CT };
+		return { bridge: kT };
 	}
-}, TT = "wfrp4e-customizer-open-npc-builder", ET = "wfrp4e-customizer-open-species-builder";
-function DT() {
+}, jT = "wfrp4e-customizer-open-npc-builder", MT = "wfrp4e-customizer-open-species-builder";
+function NT() {
 	Hooks.on("renderActorDirectory", (e, t) => {
-		let n = MT(t);
-		n && OT(n);
+		let n = RT(t);
+		n && PT(n);
 	});
 }
-function OT(e) {
-	let n = jT(e);
+function PT(e) {
+	let n = LT(e);
 	if (!n) {
 		t("wfrp4e-customizer-apps | Could not find Actor Directory button container.");
 		return;
 	}
-	kT(e, n), AT(e, n);
+	FT(e, n), IT(e, n);
 }
-function kT(e, t) {
-	if (e.querySelector(`.${TT}`)) return;
+function FT(e, t) {
+	if (e.querySelector(`.${jT}`)) return;
 	let n = document.createElement("button");
-	n.classList.add(TT, "wfrp4e-customizer-actor-directory-button"), n.type = "button", n.innerHTML = "<i class=\"fa-solid fa-user-plus\" inert></i><span>NPC Builder App</span>", n.addEventListener("click", () => {
-		new wT().render(!0);
+	n.classList.add(jT, "wfrp4e-customizer-actor-directory-button"), n.type = "button", n.innerHTML = "<i class=\"fa-solid fa-user-plus\" inert></i><span>NPC Builder App</span>", n.addEventListener("click", () => {
+		new AT().render(!0);
 	}), t.append(n);
 }
-function AT(e, t) {
-	if (e.querySelector(`.${ET}`)) return;
+function IT(e, t) {
+	if (e.querySelector(`.${MT}`)) return;
 	let n = document.createElement("button");
-	n.classList.add(ET, "wfrp4e-customizer-actor-directory-button"), n.type = "button", n.innerHTML = "<i class=\"fa-solid fa-people-group\" inert></i><span>Species Builder</span>", n.addEventListener("click", () => {
+	n.classList.add(MT, "wfrp4e-customizer-actor-directory-button"), n.type = "button", n.innerHTML = "<i class=\"fa-solid fa-people-group\" inert></i><span>Species Builder</span>", n.addEventListener("click", () => {
 		new cm().render(!0);
 	}), t.append(n);
 }
-function jT(e) {
+function LT(e) {
 	return e.querySelector(".directory-header .header-actions") ?? e.querySelector(".directory-header .action-buttons") ?? e.querySelector(".header-actions") ?? e.querySelector(".action-buttons");
 }
-function MT(e) {
-	return e instanceof HTMLElement ? e : NT(e) && e[0] instanceof HTMLElement ? e[0] : null;
+function RT(e) {
+	return e instanceof HTMLElement ? e : zT(e) && e[0] instanceof HTMLElement ? e[0] : null;
 }
-function NT(e) {
+function zT(e) {
 	return typeof e == "object" && !!e && "length" in e;
 }
 //#endregion
 //#region src/module/apps/species-builder/apply-species-config.ts
-var PT = [
+var BT = [
 	"species",
 	"speciesCharacteristics",
 	"speciesSkills",
@@ -13040,20 +13110,20 @@ var PT = [
 	"speciesHeight",
 	"speciesCareerReplacements"
 ];
-function FT() {
+function VT() {
 	let n = game.wfrp4e?.config;
 	if (!Y(n)) {
 		t(`${$} | WFRP config was unavailable; custom species were not applied.`);
 		return;
 	}
 	let r = im();
-	IT(n, As(r)), r.definitions.length > 0 && e(`${$} | Applied ${r.definitions.length} custom species definition(s).`);
+	HT(n, As(r)), r.definitions.length > 0 && e(`${$} | Applied ${r.definitions.length} custom species definition(s).`);
 }
-function IT(e, t) {
-	for (let n of PT) LT(e, n, t[n]);
-	RT(e, t.extraSpecies), zT(e, t.subspecies);
+function HT(e, t) {
+	for (let n of BT) UT(e, n, t[n]);
+	WT(e, t.extraSpecies), GT(e, t.subspecies);
 }
-function LT(e, t, n) {
+function UT(e, t, n) {
 	if (Object.keys(n).length === 0) return;
 	let r = e[t];
 	if (!Y(r)) {
@@ -13062,14 +13132,14 @@ function LT(e, t, n) {
 	}
 	Object.assign(r, n);
 }
-function RT(e, t) {
+function WT(e, t) {
 	if (t.length === 0) return;
 	let n = Array.isArray(e.extraSpecies) ? e.extraSpecies : [], r = /* @__PURE__ */ new Set();
 	for (let e of n) typeof e == "string" && r.add(e);
 	for (let e of t) r.add(e);
 	e.extraSpecies = [...r];
 }
-function zT(e, t) {
+function GT(e, t) {
 	if (Object.keys(t).length === 0) return;
 	let n = Y(e.subspecies) ? e.subspecies : {};
 	for (let [e, r] of Object.entries(t)) {
@@ -13080,118 +13150,118 @@ function zT(e, t) {
 }
 //#endregion
 //#region src/functions/species-builder/characteristic-roll-formulas.ts
-var BT = "2d10";
-function VT(e) {
+var KT = "2d10";
+function qT(e) {
 	let t = e?.split("+")[0]?.trim();
-	return t ? UT(t) : BT;
+	return t ? YT(t) : KT;
 }
-function HT(e, t) {
-	return VT(e) === VT(t);
+function JT(e, t) {
+	return qT(e) === qT(t);
 }
-function UT(e) {
+function YT(e) {
 	return e.replaceAll(/\s+/g, "").toLocaleLowerCase();
 }
 //#endregion
 //#region src/module/apps/species-builder/chargen-roll-swap-guard.ts
-var WT = Symbol("wfrp4e-customizer-guarded-attributes-stage"), GT = "wfrp4e-customizer-chargen-roll--compatible", KT = "wfrp4e-customizer-chargen-roll--dragging", qT = "wfrp4e-customizer-chargen-roll--incompatible", JT = [
-	GT,
-	KT,
-	qT
+var XT = Symbol("wfrp4e-customizer-guarded-attributes-stage"), ZT = "wfrp4e-customizer-chargen-roll--compatible", QT = "wfrp4e-customizer-chargen-roll--dragging", $T = "wfrp4e-customizer-chargen-roll--incompatible", eE = [
+	ZT,
+	QT,
+	$T
 ];
-function YT() {
+function tE() {
 	Hooks.on("wfrp4e:chargen", (e) => {
-		XT(e);
+		nE(e);
 	});
 }
-function XT(n) {
-	let r = ZT(n);
+function nE(n) {
+	let r = rE(n);
 	if (!r) {
 		t(`${$} | Could not inspect WFRP character generation stages.`);
 		return;
 	}
-	let i = QT(r);
+	let i = iE(r);
 	if (!i) {
 		t(`${$} | Could not find the WFRP Attributes character generation stage.`);
 		return;
 	}
-	if ($T(i.class)) return;
-	let a = eE(i.class);
+	if (aE(i.class)) return;
+	let a = oE(i.class);
 	typeof r.replaceStage == "function" ? r.replaceStage("attributes", a) : i.class = a, e(`${$} | Guarded WFRP characteristic roll swapping for custom species.`);
 }
-function ZT(e) {
+function rE(e) {
 	if (!Y(e)) return;
 	let t = {}, n = e.replaceStage;
 	return typeof n == "function" && (t.replaceStage = (t, r) => {
 		n.call(e, t, r);
 	}), Array.isArray(e.stages) && (t.stages = e.stages), t;
 }
-function QT(e) {
+function iE(e) {
 	for (let t of e.stages ?? []) if (Y(t) && t.key === "attributes") return typeof t.class == "function" ? t : void 0;
 }
-function $T(e) {
-	return !!e[WT];
+function aE(e) {
+	return !!e[XT];
 }
-function eE(e) {
+function oE(e) {
 	class t extends e {
-		static [WT] = !0;
+		static [XT] = !0;
 		activateListeners(e) {
 			let t = super.activateListeners(e);
-			return tE(this, e), t;
+			return sE(this, e), t;
 		}
 		swap(e, t) {
-			let n = oE(this, e), r = oE(this, t);
-			if (HT(n, r)) return super.swap(e, t);
-			sE(e, n, t, r);
+			let n = fE(this, e), r = fE(this, t);
+			if (JT(n, r)) return super.swap(e, t);
+			pE(e, n, t, r);
 		}
 	}
 	return t;
 }
-function tE(e, t) {
-	let n = aE(t);
-	if (n) for (let t of iE(n)) t.addEventListener("dragstart", () => {
+function sE(e, t) {
+	let n = dE(t);
+	if (n) for (let t of uE(n)) t.addEventListener("dragstart", () => {
 		let r = t.dataset.ch;
-		r && nE(e, n, r);
+		r && cE(e, n, r);
 	}), t.addEventListener("dragend", () => {
-		rE(n);
+		lE(n);
 	}), t.addEventListener("drop", () => {
-		rE(n);
+		lE(n);
 	});
 }
-function nE(e, t, n) {
-	rE(t);
-	let r = oE(e, n);
-	for (let i of iE(t)) {
+function cE(e, t, n) {
+	lE(t);
+	let r = fE(e, n);
+	for (let i of uE(t)) {
 		let t = i.dataset.ch;
 		if (!t) continue;
 		if (t === n) {
-			i.classList.add(KT);
+			i.classList.add(QT);
 			continue;
 		}
-		let a = HT(r, oE(e, t));
-		i.classList.add(a ? GT : qT);
+		let a = JT(r, fE(e, t));
+		i.classList.add(a ? ZT : $T);
 	}
 }
-function rE(e) {
-	for (let t of iE(e)) t.classList.remove(...JT);
+function lE(e) {
+	for (let t of uE(e)) t.classList.remove(...eE);
 }
-function iE(e) {
+function uE(e) {
 	return [...e.querySelectorAll(".ch-roll.ch-drag")];
 }
-function aE(e) {
+function dE(e) {
 	if (e instanceof HTMLElement) return e;
 	if (!Y(e)) return;
 	let t = e[0];
 	return t instanceof HTMLElement ? t : void 0;
 }
-function oE(e, t) {
+function fE(e, t) {
 	let n = Y(e.context) ? e.context : void 0, r = Y(n?.characteristics) ? n.characteristics : void 0, i = (Y(r?.[t]) ? r[t] : void 0)?.formula;
 	return typeof i == "string" ? i : void 0;
 }
-function sE(e, t, n, r) {
-	let i = cE(e), a = cE(n), o = VT(t), s = VT(r);
+function pE(e, t, n, r) {
+	let i = mE(e), a = mE(n), o = qT(t), s = qT(r);
 	ui.notifications?.warn?.(`Cannot swap ${i} and ${a}: ${i} uses ${o}, while ${a} uses ${s}.`);
 }
-function cE(e) {
+function mE(e) {
 	let t = game.wfrp4e?.config?.characteristics;
 	if (!Y(t)) return e;
 	let n = t[e];
@@ -13199,10 +13269,10 @@ function cE(e) {
 }
 //#endregion
 //#region src/view/apps/workbench/WorkbenchApp.vue?vue&type=script&setup=true&lang.ts
-var lE = { class: "customizer-workbench" }, uE = {
+var hE = { class: "customizer-workbench" }, gE = {
 	"aria-label": "Customizer targets",
 	class: "customizer-workbench__body"
-}, dE = { class: "customizer-workbench__targets" }, fE = /* @__PURE__ */ L({
+}, _E = { class: "customizer-workbench__targets" }, vE = /* @__PURE__ */ L({
 	__name: "WorkbenchApp",
 	setup(e) {
 		let t = [
@@ -13210,13 +13280,13 @@ var lE = { class: "customizer-workbench" }, uE = {
 			"Item sheets",
 			"Reusable dialogs"
 		];
-		return (e, n) => (B(), V("main", lE, [n[1] ||= U("header", { class: "customizer-workbench__header" }, [U("p", null, "WFRP4e"), U("h1", null, "Customizer Workbench")], -1), U("section", uE, [U("div", dE, [(B(), V(z, null, R(t, (e) => U("button", {
+		return (e, n) => (B(), V("main", hE, [n[1] ||= U("header", { class: "customizer-workbench__header" }, [U("p", null, "WFRP4e"), U("h1", null, "Customizer Workbench")], -1), U("section", gE, [U("div", _E, [(B(), V(z, null, R(t, (e) => U("button", {
 			key: e,
 			disabled: "",
 			type: "button"
 		}, j(e), 1)), 64))]), n[0] ||= U("div", { class: "customizer-workbench__empty" }, [U("strong", null, "Vue application shell mounted."), U("span", null, "The first customizer surface can land here.")], -1)])]));
 	}
-}), pE = class extends Rp {
+}), yE = class extends Rp {
 	static DEFAULT_OPTIONS = {
 		...super.DEFAULT_OPTIONS,
 		id: `${$}-workbench`,
@@ -13231,22 +13301,22 @@ var lE = { class: "customizer-workbench" }, uE = {
 		}
 	};
 	getVueComponent() {
-		return fE;
+		return vE;
 	}
-}, mE = `${$}.debugShapeProbes`, hE = "wfrp4eCustomizerShapeProbes", gE = "wfrp4eCustomizerShapePreset";
+}, bE = `${$}.debugShapeProbes`, xE = "wfrp4eCustomizerShapeProbes", SE = "wfrp4eCustomizerShapePreset";
 //#endregion
 //#region src/module/debug/shape-inspector/utils.ts
-function _E(e, t, n) {
+function CE(e, t, n) {
 	let r = Number(e);
 	return Number.isFinite(r) ? Math.max(0, Math.min(n, Math.floor(r))) : t;
 }
-function vE(e) {
+function wE(e) {
 	return typeof e == "object" && !!e;
 }
-function yE(e) {
+function TE(e) {
 	return typeof e == "string" ? e.trim().toLocaleLowerCase() : "";
 }
-function bE(e) {
+function EE(e) {
 	try {
 		return localStorage.getItem(e);
 	} catch {
@@ -13255,65 +13325,65 @@ function bE(e) {
 }
 //#endregion
 //#region src/module/debug/shape-inspector/path-resolver.ts
-function xE(e) {
-	let t = DE(e), n = SE(globalThis, t.root);
+function DE(e) {
+	let t = NE(e), n = OE(globalThis, t.root);
 	for (let e of t.tokens) {
 		if (e.type === "property") {
-			n = SE(n, e.key);
+			n = OE(n, e.key);
 			continue;
 		}
 		if (e.type === "index") {
-			n = SE(n, String(e.index));
+			n = OE(n, String(e.index));
 			continue;
 		}
-		n = CE(n, e.name, e.args);
+		n = kE(n, e.name, e.args);
 	}
 	return n;
 }
-function SE(e, t) {
-	if (!(!vE(e) && typeof e != "function")) try {
+function OE(e, t) {
+	if (!(!wE(e) && typeof e != "function")) try {
 		return e[t];
 	} catch {
 		return;
 	}
 }
-function CE(e, t, n) {
+function kE(e, t, n) {
 	if (t === "at") {
 		let t = Number(n[0] ?? 0), r = Number.isFinite(t) ? t : 0;
-		return OE(e).at(r);
+		return PE(e).at(r);
 	}
 	if (t === "findByName") {
-		let t = yE(n[0] ?? "");
-		return OE(e).find((e) => yE(SE(e, "name")) === t);
+		let t = TE(n[0] ?? "");
+		return PE(e).find((e) => TE(OE(e, "name")) === t);
 	}
 	if (t === "findByType") {
-		let t = yE(n[0] ?? "");
-		return OE(e).find((e) => yE(SE(e, "type")) === t);
+		let t = TE(n[0] ?? "");
+		return PE(e).find((e) => TE(OE(e, "type")) === t);
 	}
 	if (t === "get") {
 		let t = n[0] ?? "";
 		if (e instanceof Map) return e.get(t);
-		let r = SE(e, "get");
+		let r = OE(e, "get");
 		if (typeof r == "function") return r.call(e, t);
 	}
 	if (t === "sample") {
-		let t = _E(n[0], 3, 60);
-		return OE(e).slice(0, t);
+		let t = CE(n[0], 3, 60);
+		return PE(e).slice(0, t);
 	}
 	throw Error(`Unsupported path method "${t}".`);
 }
-function wE(e) {
-	return e.trim() ? e.split(",").map((e) => EE(e.trim())).map(String) : [];
+function AE(e) {
+	return e.trim() ? e.split(",").map((e) => ME(e.trim())).map(String) : [];
 }
-function TE(e) {
+function jE(e) {
 	let t = e.trim();
-	return /^-?\d+$/.test(t) ? Number(t) : EE(t);
+	return /^-?\d+$/.test(t) ? Number(t) : ME(t);
 }
-function EE(e) {
+function ME(e) {
 	let t = /^["'](?<value>.*)["']$/.exec(e);
 	return t?.groups ? t.groups.value ?? "" : e;
 }
-function DE(e) {
+function NE(e) {
 	let t = /^(?<root>[$A-Z_a-z][\w$]*)/.exec(e.trim());
 	if (!t?.groups) throw Error(`Debug path "${e}" does not start with a root name.`);
 	let n = t.groups.root;
@@ -13325,7 +13395,7 @@ function DE(e) {
 			let t = e.groups.name;
 			if (!t) throw Error(`Could not parse debug path near "${i}".`);
 			r.push({
-				args: wE(e.groups.args ?? ""),
+				args: AE(e.groups.args ?? ""),
 				name: t,
 				type: "method"
 			}), i = i.slice(e[0].length);
@@ -13346,7 +13416,7 @@ function DE(e) {
 			let e = n.groups.index;
 			if (!e) throw Error(`Could not parse debug path near "${i}".`);
 			r.push({
-				index: TE(e),
+				index: jE(e),
 				type: "index"
 			}), i = i.slice(n[0].length);
 			continue;
@@ -13358,14 +13428,14 @@ function DE(e) {
 		tokens: r
 	};
 }
-function OE(e) {
+function PE(e) {
 	if (Array.isArray(e)) return e;
-	let t = SE(e, "contents");
+	let t = OE(e, "contents");
 	return Array.isArray(t) ? t : [];
 }
 //#endregion
 //#region src/module/debug/shape-inspector/presets.ts
-var kE = { "npc-builder": [
+var FE = { "npc-builder": [
 	{
 		hook: "ready",
 		label: "game.actors collection",
@@ -13439,82 +13509,82 @@ var kE = { "npc-builder": [
 ] };
 //#endregion
 //#region src/module/debug/shape-inspector/probe-config.ts
-function AE() {
+function IE() {
 	return window.location.href.includes("wfrp4eCustomizerShapeProbes") || window.location.href.includes("wfrp4eCustomizerShapePreset");
 }
-function jE(e) {
+function LE(e) {
 	let t = {
 		hook: e.hook ?? "ready",
-		maxDepth: _E(e.maxDepth, 2, 6),
-		maxEntries: _E(e.maxEntries, 12, 60),
+		maxDepth: CE(e.maxDepth, 2, 6),
+		maxEntries: CE(e.maxEntries, 12, 60),
 		path: e.path.trim()
 	};
 	return e.label && (t.label = e.label), t;
 }
-function ME() {
-	return [...NE(), ...PE()].map(jE);
+function RE() {
+	return [...zE(), ...BE()].map(LE);
 }
-function NE() {
-	let e = bE(mE);
+function zE() {
+	let e = EE(bE);
 	if (!e) return [];
 	try {
 		let t = JSON.parse(e);
-		return Array.isArray(t) ? t.filter(IE).map(jE) : [];
+		return Array.isArray(t) ? t.filter(HE).map(LE) : [];
 	} catch {
 		return [];
 	}
 }
-function PE() {
+function BE() {
 	let e = [], t = [new URLSearchParams(window.location.search), new URLSearchParams(window.location.hash.replace(/^#/, ""))];
 	for (let n of t) {
-		let t = n.get(gE), r = n.get(hE);
-		t && e.push(...kE[t] ?? []), r && e.push(...FE(r));
+		let t = n.get(SE), r = n.get(xE);
+		t && e.push(...FE[t] ?? []), r && e.push(...VE(r));
 	}
-	return window.location.href.includes("wfrp4eCustomizerShapePreset=npc-builder") && !e.length && e.push(...kE["npc-builder"] ?? []), e;
+	return window.location.href.includes("wfrp4eCustomizerShapePreset=npc-builder") && !e.length && e.push(...FE["npc-builder"] ?? []), e;
 }
-function FE(e) {
+function VE(e) {
 	try {
 		let t = JSON.parse(decodeURIComponent(e));
-		return Array.isArray(t) ? t.filter(IE) : [];
+		return Array.isArray(t) ? t.filter(HE) : [];
 	} catch (e) {
 		return t(`${$} | Could not parse URL shape probes.`, e), [];
 	}
 }
-function IE(e) {
+function HE(e) {
 	return typeof e != "object" || !e ? !1 : "path" in e && typeof e.path == "string";
 }
 //#endregion
 //#region src/module/debug/shape-inspector/summary.ts
-function LE(e, t) {
-	return !vE(e) && typeof e != "function" ? HE(e) : typeof e == "function" ? BE(e) : Array.isArray(e) ? RE(e, t) : e instanceof Map ? zE(e, t) : VE(e, t);
+function UE(e, t) {
+	return !wE(e) && typeof e != "function" ? JE(e) : typeof e == "function" ? KE(e) : Array.isArray(e) ? WE(e, t) : e instanceof Map ? GE(e, t) : qE(e, t);
 }
-function RE(e, t) {
+function WE(e, t) {
 	return {
 		length: e.length,
-		sample: e.slice(0, t.maxEntries).map((e) => LE(e, WE(t))),
+		sample: e.slice(0, t.maxEntries).map((e) => UE(e, XE(t))),
 		type: "array"
 	};
 }
-function zE(e, t) {
+function GE(e, t) {
 	return {
 		sample: [...e.entries()].slice(0, t.maxEntries).map(([e, n]) => ({
-			key: LE(e, WE(t)),
-			value: LE(n, WE(t))
+			key: UE(e, XE(t)),
+			value: UE(n, XE(t))
 		})),
 		size: e.size,
 		type: "Map"
 	};
 }
-function BE(e) {
+function KE(e) {
 	return {
 		name: e.name,
 		type: "function"
 	};
 }
-function VE(e, t) {
+function qE(e, t) {
 	if (t.seen.has(e)) return { type: "circular" };
 	t.seen.add(e);
-	let n = UE(e, t.maxEntries), r = SE(e, "constructor"), i = {
+	let n = YE(e, t.maxEntries), r = OE(e, "constructor"), i = {
 		constructor: typeof r == "function" && r.name ? r.name : "Object",
 		keys: n,
 		type: "object"
@@ -13526,16 +13596,16 @@ function VE(e, t) {
 		"type",
 		"uuid"
 	]) {
-		let n = SE(e, t);
+		let n = OE(e, t);
 		typeof n == "string" && (i[t] = n);
 	}
 	if (t.maxDepth <= 0) return i;
 	let a = {};
-	for (let r of n) a[r] = LE(SE(e, r), WE(t));
+	for (let r of n) a[r] = UE(OE(e, r), XE(t));
 	i.properties = a;
-	let o = SE(e, "toObject");
+	let o = OE(e, "toObject");
 	if (typeof o == "function") try {
-		i.source = LE(o.call(e), WE(t));
+		i.source = UE(o.call(e), XE(t));
 	} catch (e) {
 		i.source = {
 			error: e instanceof Error ? e.message : String(e),
@@ -13544,7 +13614,7 @@ function VE(e, t) {
 	}
 	return i;
 }
-function HE(e) {
+function JE(e) {
 	if (typeof e == "string") {
 		let t = e.length > 120 ? `${e.slice(0, 120)}...` : e;
 		return {
@@ -13558,10 +13628,10 @@ function HE(e) {
 		value: e
 	};
 }
-function UE(e, t) {
+function YE(e, t) {
 	return Object.keys(e).sort().slice(0, t);
 }
-function WE(e) {
+function XE(e) {
 	return {
 		maxDepth: e.maxDepth - 1,
 		maxEntries: e.maxEntries,
@@ -13570,42 +13640,42 @@ function WE(e) {
 }
 //#endregion
 //#region src/module/debug/shape-inspector/index.ts
-function GE() {
-	localStorage.removeItem(mE), e(`${$} | Cleared debug shape probes.`);
+function ZE() {
+	localStorage.removeItem(bE), e(`${$} | Cleared debug shape probes.`);
 }
-function KE() {
-	return ME();
+function QE() {
+	return RE();
 }
-function qE(e, t = {}) {
-	let n = XE(e, t);
-	return QE(n), n;
+function $E(e, t = {}) {
+	let n = nD(e, t);
+	return iD(n), n;
 }
-function JE() {
-	let t = ME();
+function eD() {
+	let t = RE();
 	for (let e of ["init", "setup"]) {
 		let n = t.filter((t) => t.hook === e);
 		n.length && Hooks.once(e, () => {
-			for (let t of n) ZE(t, e);
+			for (let t of n) rD(t, e);
 		});
 	}
 	Hooks.once("ready", () => {
-		let t = ME().filter((e) => (e.hook ?? "ready") === "ready");
-		AE() && e(`${$} | Debug shape ready probes discovered: ${t.length}`, window.location.href);
-		for (let e of t) ZE(e, "ready");
+		let t = RE().filter((e) => (e.hook ?? "ready") === "ready");
+		IE() && e(`${$} | Debug shape ready probes discovered: ${t.length}`, window.location.href);
+		for (let e of t) rD(e, "ready");
 	});
 }
-function YE(t) {
-	let n = t.map(jE);
-	localStorage.setItem(mE, JSON.stringify(n)), e(`${$} | Stored ${n.length} debug shape probe(s). Reload Foundry to run init/setup probes.`);
+function tD(t) {
+	let n = t.map(LE);
+	localStorage.setItem(bE, JSON.stringify(n)), e(`${$} | Stored ${n.length} debug shape probe(s). Reload Foundry to run init/setup probes.`);
 }
-function XE(e, t = {}, n) {
-	let r = _E(t.maxDepth, 2, 6), i = _E(t.maxEntries, 12, 60), a = xE(e), o = {
+function nD(e, t = {}, n) {
+	let r = CE(t.maxDepth, 2, 6), i = CE(t.maxEntries, 12, 60), a = DE(e), o = {
 		inspectedAt: (/* @__PURE__ */ new Date()).toISOString(),
 		label: t.label || e,
 		maxDepth: r,
 		maxEntries: i,
 		path: e,
-		value: LE(a, {
+		value: UE(a, {
 			maxDepth: r,
 			maxEntries: i,
 			seen: /* @__PURE__ */ new WeakSet()
@@ -13613,54 +13683,54 @@ function XE(e, t = {}, n) {
 	};
 	return n && (o.hook = n), o;
 }
-function ZE(e, n) {
+function rD(e, n) {
 	try {
-		QE(XE(e.path, e, n));
+		iD(nD(e.path, e, n));
 	} catch (n) {
 		t(`${$} | Debug shape probe failed for "${e.path}".`, n);
 	}
 }
-function QE(t) {
+function iD(t) {
 	e(`${$} | Debug shape probe: ${t.label}`, JSON.stringify(t, null, 2));
 }
 //#endregion
 //#region src/module/create-module-api.ts
-function $E() {
+function aD() {
 	return {
-		clearDebugShapeProbes: GE,
-		getDebugShapeProbes: KE,
-		inspectPath: qE,
+		clearDebugShapeProbes: ZE,
+		getDebugShapeProbes: QE,
+		inspectPath: $E,
 		listNpcAutoAdvanceStrategies: Vh,
 		openNpcBuilder: async () => {
-			await new wT().render(!0);
+			await new AT().render(!0);
 		},
 		openSpeciesBuilder: async () => {
 			await new cm().render(!0);
 		},
 		openWorkbench: async () => {
-			await new pE().render(!0);
+			await new yE().render(!0);
 		},
 		registerNpcAutoAdvanceStrategy: Bh,
-		setDebugShapeProbes: YE
+		setDebugShapeProbes: tD
 	};
 }
 //#endregion
 //#region src/module/register-module-menus.ts
-function eD() {
+function oD() {
 	game.settings.registerMenu($, "workbench", {
 		hint: "Open the WFRP4e Customizer Apps workbench.",
 		icon: "fa-solid fa-screwdriver-wrench",
 		label: "Open Workbench",
 		name: "WFRP4e Customizer Apps",
 		restricted: !0,
-		type: pE
+		type: yE
 	}), game.settings.registerMenu($, "npc-builder", {
 		hint: "Build a WFRP4e NPC from a base Actor and Career items.",
 		icon: "fa-solid fa-user-plus",
 		label: "Open NPC Builder",
 		name: "WFRP4e NPC Builder",
 		restricted: !0,
-		type: wT
+		type: AT
 	}), game.settings.registerMenu($, "species-builder", {
 		hint: "Create custom WFRP4e species definitions for character generation.",
 		icon: "fa-solid fa-people-group",
@@ -13672,28 +13742,35 @@ function eD() {
 }
 //#endregion
 //#region src/module/register-module-settings.ts
-function tD() {
-	JS(), rm();
+function sD() {
+	rC(), rm();
 }
 //#endregion
 //#region src/functions/item-grants/wfrp-grant-effect.ts
-var nD = "generatedGrantItemsEffect";
-function rD(e) {
-	let t = e.items.map((e) => e.uuid);
+var cD = "generatedGrantItemsEffect", lD = {
+	grantMode: "all",
+	lifetime: "linked-to-effect",
+	ownerAction: "keep"
+};
+function uD(e) {
+	let t = e.recipe ?? lD;
+	dD(t);
+	let n = e.items.map((e) => e.uuid);
 	return {
 		changes: [],
-		description: aD(e.effectName, e.items),
+		description: pD(e.effectName, e.items, t),
 		disabled: !1,
 		flags: { [e.flagScope]: {
-			[nD]: !0,
-			itemUuids: t
+			[cD]: !0,
+			itemUuids: n,
+			recipe: t
 		} },
 		img: e.items[0]?.img ?? "icons/svg/aura.svg",
 		name: e.effectName,
 		system: {
 			scriptData: [{
 				label: e.effectName,
-				script: iD(t),
+				script: fD(n, t),
 				trigger: "addItems"
 			}],
 			transferData: {
@@ -13704,7 +13781,19 @@ function rD(e) {
 		transfer: !0
 	};
 }
-function iD(e) {
+function dD(e) {
+	if (e.lifetime === "linked-to-effect" && e.ownerAction === "delete-after-grant") throw Error("Self-removing grant effects must create detached item copies.");
+}
+function fD(e, t) {
+	let n = t.lifetime === "linked-to-effect" ? "{ fromEffect: this.effect.id }" : "{}", r = t.ownerAction === "delete-after-grant" ? [
+		"",
+		"if (this.item) {",
+		"  await this.item.delete({ skipDeletingItems: true });",
+		"  this.script.notification(\"Removed \" + this.item.name + \" after granting items.\");",
+		"} else {",
+		"  this.script.notification(\"Could not remove the source item after granting items.\", \"warn\");",
+		"}"
+	] : [];
 	return [
 		"// Generated by WFRP4e Customizer Apps.",
 		`const itemUuids = ${JSON.stringify(e, null, 2)};`,
@@ -13723,53 +13812,310 @@ function iD(e) {
 		"}",
 		"",
 		"if (itemDataToCreate.length) {",
-		"  await this.actor.createEmbeddedDocuments(\"Item\", itemDataToCreate, { fromEffect: this.effect.id });",
+		`  await this.actor.createEmbeddedDocuments("Item", itemDataToCreate, ${n});`,
 		"  this.script.notification(\"Added \" + itemDataToCreate.length + \" granted item(s).\");",
 		"} else {",
 		"  this.script.notification(\"No granted items were added.\", \"warn\");",
-		"}"
+		"}",
+		...r
 	].join("\n");
 }
-function aD(e, t) {
-	return `<p><strong>${oD(e)}</strong>: grants item copies while this effect is active.</p><ul>${t.map((e) => `<li>${oD(e.name)}</li>`).join("")}</ul>`;
+function pD(e, t, n) {
+	let r = mD(e), i = t.map((e) => `<li>${mD(e.name)}</li>`).join("");
+	return `<p><strong>${r}</strong>: grants item copies; ${n.lifetime === "linked-to-effect" ? "granted item copies are removed with this effect" : "granted item copies remain after this effect is removed"}.${n.ownerAction === "delete-after-grant" ? " The source Item removes itself after granting." : ""}</p><ul>${i}</ul>`;
 }
-function oD(e) {
+function mD(e) {
 	return e.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 }
 //#endregion
-//#region src/module/wfrp4e/item-effect-drops.ts
-var sD = new Set(["talent", "trait"]), cD = /* @__PURE__ */ new WeakSet(), lD = !1, uD = [
-	"[data-tab=\"effects\"].active",
-	"[data-application-part=\"effects\"].active",
+//#region src/module/wfrp4e/grant/builder-view.ts
+var hD = "detached";
+function gD(e, t) {
+	let n = document.createElement("section");
+	return n.classList.add("wfrp4e-customizer-grant-builder__content"), n.append(_D(e), vD(t), yD(e, t), CD(e, t), wD(e, t), DD(e, t)), n;
+}
+function _D(e) {
+	let t = document.createElement("header");
+	t.classList.add("wfrp4e-customizer-grant-builder__header");
+	let n = document.createElement("h2");
+	n.textContent = e.carrierName;
+	let r = document.createElement("p");
+	return r.textContent = "Build an item-granting Active Effect on this WFRP Item.", t.append(n, r), t;
+}
+function vD(e) {
+	let t = document.createElement("div");
+	t.classList.add("wfrp4e-customizer-grant-builder__drop-zone"), t.tabIndex = 0;
+	let n = document.createElement("strong");
+	n.textContent = "Drop Items Here";
+	let r = document.createElement("span");
+	return r.textContent = "World and compendium Items can be added one at a time.", t.append(n, r), t.addEventListener("dragover", (e) => {
+		e.preventDefault(), t.classList.add("wfrp4e-customizer-grant-builder__drop-zone--active"), e.dataTransfer && (e.dataTransfer.dropEffect = "copy");
+	}), t.addEventListener("dragleave", () => {
+		t.classList.remove("wfrp4e-customizer-grant-builder__drop-zone--active");
+	}), t.addEventListener("drop", e.onDrop), t;
+}
+function yD(e, t) {
+	let n = document.createElement("ol");
+	if (n.classList.add("wfrp4e-customizer-grant-builder__item-list"), e.items.length === 0) {
+		let e = document.createElement("li");
+		return e.classList.add("wfrp4e-customizer-grant-builder__empty"), e.textContent = "No granted items configured.", n.append(e), n;
+	}
+	for (let r of e.items) n.append(bD(r, t));
+	return n;
+}
+function bD(e, t) {
+	let n = document.createElement("li");
+	if (n.classList.add("wfrp4e-customizer-grant-builder__item-row"), e.img) {
+		let t = document.createElement("img");
+		t.alt = "", t.src = e.img, n.append(t);
+	}
+	return n.append(xD(e), SD(e, t)), n;
+}
+function xD(e) {
+	let t = document.createElement("div");
+	t.classList.add("wfrp4e-customizer-grant-builder__item-text");
+	let n = document.createElement("strong");
+	n.textContent = e.name;
+	let r = document.createElement("small");
+	return r.textContent = e.uuid, t.append(n, r), t;
+}
+function SD(e, t) {
+	let n = document.createElement("button");
+	return n.type = "button", n.title = `Remove ${e.name}`, n.innerHTML = "<i class=\"fa-solid fa-times\" aria-hidden=\"true\"></i>", n.addEventListener("click", () => {
+		t.onRemoveItem(e.uuid);
+	}), n;
+}
+function CD(e, t) {
+	let n = document.createElement("label");
+	n.classList.add("wfrp4e-customizer-grant-builder__field");
+	let r = document.createElement("span");
+	r.textContent = "Effect Name";
+	let i = document.createElement("input");
+	return i.type = "text", i.value = e.effectName, i.addEventListener("input", () => {
+		t.onEffectNameInput(i.value);
+	}), n.append(r, i), n;
+}
+function wD(e, t) {
+	let n = document.createElement("fieldset");
+	n.classList.add("wfrp4e-customizer-grant-builder__field-group");
+	let r = document.createElement("legend");
+	return r.textContent = "Granted Item Lifetime", n.append(r), n.append(TD(e, t, "linked-to-effect", "Linked to this effect", "Granted Items are removed when this effect is deleted."), TD(e, t, "detached", "Detached copies", "Granted Items remain after this effect or source Item is removed."), ED(e, t)), n;
+}
+function TD(e, t, n, r, i) {
+	let a = document.createElement("label");
+	a.classList.add("wfrp4e-customizer-grant-builder__radio");
+	let o = document.createElement("input");
+	o.type = "radio", o.name = "grant-lifetime", o.value = n, o.checked = e.lifetime === n, o.addEventListener("change", () => {
+		t.onLifetimeChange(n);
+	});
+	let s = document.createElement("span"), c = document.createElement("strong");
+	c.textContent = r;
+	let l = document.createElement("small");
+	return l.textContent = i, s.append(c, l), a.append(o, s), a;
+}
+function ED(e, t) {
+	let n = document.createElement("label");
+	n.classList.add("wfrp4e-customizer-grant-builder__checkbox");
+	let r = document.createElement("input");
+	r.type = "checkbox", r.checked = e.ownerAction === "delete-after-grant", r.disabled = e.lifetime !== hD, r.addEventListener("change", () => {
+		t.onOwnerActionChange(r.checked ? "delete-after-grant" : "keep");
+	});
+	let i = document.createElement("span");
+	return i.textContent = "Remove the source Item after granting.", n.append(r, i), n;
+}
+function DD(e, t) {
+	let n = document.createElement("footer");
+	n.classList.add("wfrp4e-customizer-grant-builder__actions");
+	let r = document.createElement("button");
+	r.type = "button", r.textContent = "Cancel", r.addEventListener("click", t.onCancel);
+	let i = document.createElement("button");
+	return i.type = "button", i.classList.add("wfrp4e-customizer-grant-builder__primary"), i.disabled = e.items.length === 0, i.textContent = "Create Grant Effect", i.addEventListener("click", t.onCreate), n.append(r, i), n;
+}
+//#endregion
+//#region src/module/wfrp4e/grant/item-documents.ts
+function OD(e) {
+	let t = e.dataTransfer?.getData("text/plain") ?? "";
+	if (!t) return null;
+	try {
+		return Wp(t).type === "Item" ? t : null;
+	} catch {
+		return null;
+	}
+}
+async function kD(e) {
+	let t = Wp(e);
+	if (!t.uuid) throw Error("Drop an Item with a resolvable UUID.");
+	return Hp(await fromUuid(t.uuid), "The dropped Item was not found.");
+}
+function AD(e) {
+	let t = {
+		name: e.name,
+		uuid: e.uuid
+	};
+	return e.img && (t.img = e.img), t;
+}
+//#endregion
+//#region src/module/wfrp4e/grant/builder-application.ts
+var jD = "detached", MD = class extends foundry.applications.api.ApplicationV2 {
+	static DEFAULT_OPTIONS = {
+		...super.DEFAULT_OPTIONS,
+		classes: [$, "wfrp4e-customizer-grant-builder"],
+		id: `${$}-grant-builder`,
+		position: {
+			height: 560,
+			width: 620
+		},
+		window: {
+			icon: "fa-solid fa-sitemap",
+			title: "Advanced Item Grant Builder"
+		}
+	};
+	#e = "Grant Items";
+	#t = !1;
+	#n = [];
+	#r = "linked-to-effect";
+	#i = "keep";
+	carrierItem;
+	constructor(e) {
+		super(), this.carrierItem = e;
+	}
+	async _renderHTML(e, t) {
+		return gD({
+			carrierName: this.carrierItem.name,
+			effectName: this.#e,
+			items: this.#n,
+			lifetime: this.#r,
+			ownerAction: this.#i
+		}, {
+			onCancel: () => {
+				this.close();
+			},
+			onCreate: () => {
+				this.createGrantEffect();
+			},
+			onDrop: (e) => {
+				this.handleDrop(e);
+			},
+			onEffectNameInput: (e) => {
+				this.#e = e, this.#t = !0;
+			},
+			onLifetimeChange: (e) => {
+				this.#r = e, e !== jD && (this.#i = "keep"), this.render();
+			},
+			onOwnerActionChange: (e) => {
+				this.#i = e, this.render();
+			},
+			onRemoveItem: (e) => {
+				this.#n = this.#n.filter((t) => t.uuid !== e), this.render();
+			}
+		});
+	}
+	_replaceHTML(e, t, n) {
+		t.classList.add("wfrp4e-customizer-grant-builder-window"), t.replaceChildren(e);
+	}
+	async handleDrop(e) {
+		e.preventDefault(), e.stopPropagation();
+		let t = OD(e);
+		if (t) try {
+			let e = await kD(t);
+			if (e.uuid === this.carrierItem.uuid) throw Error("An Item cannot grant itself.");
+			if (this.#n.some((t) => t.uuid === e.uuid)) {
+				ui.notifications?.warn?.(`"${e.name}" is already in this grant effect.`);
+				return;
+			}
+			this.#n = [...this.#n, AD(e)], this.updateDefaultEffectName(), this.render();
+		} catch (e) {
+			let t = e instanceof Error ? e.message : "The dropped Item could not be converted.";
+			ui.notifications?.warn?.(t);
+		}
+	}
+	updateDefaultEffectName() {
+		if (!this.#t) {
+			if (this.#n.length === 1) {
+				let e = this.#n[0];
+				if (!e) return;
+				this.#e = `Grant ${e.name}`;
+				return;
+			}
+			this.#e = "Grant Item Package";
+		}
+	}
+	async createGrantEffect() {
+		let e = this.#e.trim();
+		if (!e) {
+			ui.notifications?.warn?.("Enter an effect name before creating the grant effect.");
+			return;
+		}
+		if (this.#n.length === 0) {
+			ui.notifications?.warn?.("Add at least one Item before creating the grant effect.");
+			return;
+		}
+		if (!this.carrierItem.createEmbeddedDocuments) {
+			ui.notifications?.warn?.("This Item sheet does not support creating Active Effects.");
+			return;
+		}
+		try {
+			let t = {
+				grantMode: "all",
+				lifetime: this.#r,
+				ownerAction: this.#i
+			}, n = uD({
+				effectName: e,
+				flagScope: $,
+				items: this.#n,
+				recipe: t
+			});
+			await this.carrierItem.createEmbeddedDocuments("ActiveEffect", [n]), ui.notifications?.info(`Created "${e}" grant effect.`), await this.close();
+		} catch (e) {
+			let t = e instanceof Error ? e.message : "Could not create the grant effect.";
+			ui.notifications?.warn?.(t);
+		}
+	}
+}, ND = new Set(["talent", "trait"]), PD = /* @__PURE__ */ new WeakSet(), FD = !1, ID = "wfrp4e-customizer-grant-builder-button", LD = [
+	"section[data-application-part=\"effects\"].active",
+	"section[data-tab=\"effects\"].active",
+	".tab[data-tab=\"effects\"].active",
 	".tab.effects.active"
-].join(","), dD = [
-	"[data-tab=\"effects\"]",
-	"[data-application-part=\"effects\"]",
+].join(","), RD = [
+	"section[data-application-part=\"effects\"]",
+	"section[data-tab=\"effects\"]",
+	".tab[data-tab=\"effects\"]",
 	".tab.effects"
 ].join(",");
-function fD() {
-	lD || (lD = !0, Hooks.on("renderApplicationV2", (e, t) => {
+function zD() {
+	FD || (FD = !0, Hooks.on("renderApplicationV2", (e, t) => {
 		if (!(t instanceof HTMLElement)) return;
-		let n = vD(e);
-		!n || !sD.has(n.type) || pD(n, t);
+		let n = UD(e);
+		!n || !ND.has(n.type) || (BD(n, t), VD(n, t));
 	}));
 }
-function pD(e, t) {
-	cD.has(t) || (cD.add(t), t.addEventListener("dragover", (e) => {
-		yD(t, e.target) && (e.preventDefault(), e.dataTransfer && (e.dataTransfer.dropEffect = "copy"));
+function BD(e, t) {
+	PD.has(t) || (PD.add(t), t.addEventListener("dragover", (e) => {
+		WD(t, e.target) && (e.preventDefault(), e.dataTransfer && (e.dataTransfer.dropEffect = "copy"));
 	}, !0), t.addEventListener("drop", (n) => {
-		mD(e, t, n);
+		HD(e, t, n);
 	}, !0));
 }
-async function mD(e, t, n) {
-	if (!yD(t, n.target)) return;
-	let r = hD(n);
+function VD(e, t) {
+	if (t.querySelector(`.${ID}`)) return;
+	let n = KD(t, { includeInactive: !0 });
+	if (!n) return;
+	let r = document.createElement("div");
+	r.classList.add("wfrp4e-customizer-grant-builder-toolbar");
+	let i = document.createElement("button");
+	i.type = "button", i.classList.add(ID), i.title = "Open the advanced item grant builder", i.innerHTML = "<i class=\"fa-solid fa-sitemap\" aria-hidden=\"true\"></i><span>Grant Builder</span>", i.addEventListener("click", () => {
+		new MD(e).render(!0);
+	}), r.append(i), n.prepend(r);
+}
+async function HD(e, t, n) {
+	if (!WD(t, n.target)) return;
+	let r = OD(n);
 	if (r) {
 		n.preventDefault(), n.stopPropagation();
 		try {
-			let t = await gD(r);
+			let t = await kD(r);
 			if (t.uuid === e.uuid) throw Error("An Item cannot grant itself.");
-			let n = _D(t), i = rD({
+			let n = AD(t), i = uD({
 				effectName: `Grant ${t.name}`,
 				flagScope: $,
 				items: [n]
@@ -13782,39 +14128,24 @@ async function mD(e, t, n) {
 		}
 	}
 }
-function hD(e) {
-	let t = e.dataTransfer?.getData("text/plain") ?? "";
-	if (!t) return null;
-	try {
-		return Wp(t).type === "Item" ? t : null;
-	} catch {
-		return null;
-	}
-}
-async function gD(e) {
-	let t = Wp(e);
-	if (!t.uuid) throw Error("Drop an Item with a resolvable UUID onto the Effects tab.");
-	return Hp(await fromUuid(t.uuid), "The dropped Item was not found.");
-}
-function _D(e) {
-	let t = {
-		name: e.name,
-		uuid: e.uuid
-	};
-	return e.img && (t.img = e.img), t;
-}
-function vD(e) {
+function UD(e) {
 	if (typeof e != "object" || !e) return null;
 	let t = "item" in e ? e.item : void 0;
 	if (Bp(t)) return t;
 	let n = "document" in e ? e.document : void 0;
 	return Bp(n) ? n : null;
 }
-function yD(e, t) {
-	return !(t instanceof Element) || !e.contains(t) ? !1 : e.querySelector(uD) ? !0 : !![...e.querySelectorAll(dD)].find((e) => e.offsetParent !== null);
+function WD(e, t) {
+	return !(t instanceof Element) || !e.contains(t) ? !1 : !!GD(e);
 }
-JE(), Hooks.once("init", () => {
-	e(`${$} | Initializing`), tD(), game.system.id === "wfrp4e" && (FT(), YT(), fD()), eD(), DT();
+function GD(e) {
+	return e.querySelector(LD) || KD(e, { includeInactive: !1 });
+}
+function KD(e, t) {
+	return [...e.querySelectorAll(RD)].find((e) => t.includeInactive || e.offsetParent !== null) ?? null;
+}
+eD(), Hooks.once("init", () => {
+	e(`${$} | Initializing`), sD(), game.system.id === "wfrp4e" && (VT(), tE(), zD()), oD(), NT();
 }), Hooks.once("ready", () => {
 	if (game.system.id !== "wfrp4e") {
 		t(`${$} | Loaded outside ${np}; skipping module API registration.`);
@@ -13825,6 +14156,6 @@ JE(), Hooks.once("init", () => {
 		t(`${$} | Foundry did not expose the module entry.`);
 		return;
 	}
-	n.api = $E(), gS(), AS(), e(`${$} | Ready`);
+	n.api = aD(), yS(), LS(), e(`${$} | Ready`);
 });
 //#endregion
