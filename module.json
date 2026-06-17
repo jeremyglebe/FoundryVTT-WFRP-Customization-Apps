@@ -2,7 +2,7 @@
   "id": "wfrp4e-customizer-apps",
   "title": "WFRP4e Customizer Apps",
   "description": "Vue-powered customization applications for the WFRP4e Foundry system.",
-  "version": "1.6.2",
+  "version": "1.7.0",
   "authors": [
     {
       "name": "WFRP4e Customizer Apps contributors"
@@ -29,7 +29,40 @@
   "styles": [
     "styles/wfrp4e-customizer-apps.css"
   ],
+  "packs": [
+    {
+      "name": "sample-species-traits",
+      "label": "Sample Species Traits",
+      "type": "Item",
+      "system": "wfrp4e",
+      "path": "packs/sample-species-traits"
+    },
+    {
+      "name": "sample-species-talents",
+      "label": "Sample Species Talents",
+      "type": "Item",
+      "system": "wfrp4e",
+      "path": "packs/sample-species-talents"
+    },
+    {
+      "name": "sample-species-journals",
+      "label": "Sample Species Journals",
+      "type": "JournalEntry",
+      "path": "packs/sample-species-journals"
+    }
+  ],
+  "packFolders": [
+    {
+      "name": "Sample Species - Customizer Apps",
+      "sorting": "a",
+      "packs": [
+        "sample-species-traits",
+        "sample-species-talents",
+        "sample-species-journals"
+      ]
+    }
+  ],
   "url": "https://github.com/jeremyglebe/FoundryVTT-WFRP-Customization-Apps",
   "manifest": "https://github.com/jeremyglebe/FoundryVTT-WFRP-Customization-Apps/releases/latest/download/module.json",
-  "download": "https://github.com/jeremyglebe/FoundryVTT-WFRP-Customization-Apps/releases/download/v1.6.2/module.zip"
+  "download": "https://github.com/jeremyglebe/FoundryVTT-WFRP-Customization-Apps/releases/download/v1.7.0/module.zip"
 }
