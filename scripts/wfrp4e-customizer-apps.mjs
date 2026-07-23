@@ -13689,24 +13689,28 @@ function JO(e, t, n) {
 		minimumCurrent: -e.baseValue,
 		minimumTotal: 0
 	};
-	let i = t[r.characteristicKey] ?? 0, a = Math.max(0, e.baseAdvances), o = [{
+	let i = t[r.characteristicKey] ?? 0, a = Math.max(0, e.baseAdvances), o = Math.floor(e.baseModifier ?? 0), s = [{
 		count: i,
 		kind: "characteristic",
 		label: r.characteristicName
 	}];
-	return a > 0 && o.push({
+	return a > 0 && s.push({
 		count: a,
 		kind: "base",
 		label: "Base skill advances"
+	}), o !== 0 && s.push({
+		count: o,
+		kind: "base",
+		label: "Stored modifier"
 	}), {
 		...e,
-		baseValue: i + a,
+		baseValue: i + a + o,
 		characteristicKey: r.characteristicKey,
 		characteristicName: r.characteristicName,
 		characteristicValue: i,
 		minimumCurrent: -a,
 		minimumTotal: i,
-		sources: [...o, ...e.sources]
+		sources: [...s, ...e.sources]
 	};
 }
 function YO(e, t, n) {
@@ -13790,7 +13794,7 @@ function rk(e) {
 			name: n.name,
 			sources: []
 		};
-		n.characteristicKey && (r.characteristicKey = n.characteristicKey, r.characteristicName = n.characteristicName ?? Oc[n.characteristicKey]), n.kind === "talent" && n.baseAdvances > 0 && r.sources.push({
+		n.baseModifier !== void 0 && (r.baseModifier = n.baseModifier), n.characteristicKey && (r.characteristicKey = n.characteristicKey, r.characteristicName = n.characteristicName ?? Oc[n.characteristicKey]), n.kind === "talent" && n.baseAdvances > 0 && r.sources.push({
 			count: n.baseAdvances,
 			kind: "base",
 			label: "Base"
@@ -13884,19 +13888,37 @@ var mk = {
 };
 function hk(e) {
 	let t = {
-		characteristics: 0,
-		skills: 0,
-		talents: 0,
-		total: 0
+		characteristics: {},
+		skills: [],
+		talents: []
+	}, n = {
+		characteristics: {},
+		skills: [],
+		talents: []
 	};
-	for (let n of e) {
-		let e = _k(n);
-		n.kind === "characteristic" ? t.characteristics += e : n.kind === "skill" ? t.skills += e : t.talents += e;
+	for (let r of e) {
+		let e = Tk(r), i = e + r.current;
+		if (r.kind === "characteristic") {
+			let a = kc[wO(r.name)];
+			a && (t.characteristics[a] = e, n.characteristics[a] = i);
+		} else r.kind === "skill" ? (t.skills.push({
+			name: r.name,
+			value: e
+		}), n.skills.push({
+			name: r.name,
+			value: i
+		})) : (t.talents.push({
+			name: r.name,
+			value: e
+		}), n.talents.push({
+			name: r.name,
+			value: i
+		}));
 	}
-	return t.total = t.characteristics + t.skills + t.talents, t;
+	return gk(n, t);
 }
 function gk(e, t) {
-	let n = xk(e, t), r = Sk(e.skills, t.skills, mk.skill), i = Ck(e.talents, t.talents);
+	let n = bk(e, t), r = xk(e.skills, t.skills, mk.skill), i = Sk(e.talents, t.talents);
 	return {
 		characteristics: n,
 		skills: r,
@@ -13905,13 +13927,10 @@ function gk(e, t) {
 	};
 }
 function _k(e) {
-	let t = vk(e);
-	return e.kind === "talent" ? bk(Math.max(0, Math.floor(e.current)), Math.max(0, Math.floor(e.baseAdvances))) : yk(t, e.kind === "characteristic" ? mk.characteristic : mk.skill);
+	let t = Math.max(0, Math.floor(e.current));
+	return e.kind === "talent" ? yk(t) : vk(t, e.kind === "characteristic" ? mk.characteristic : mk.skill);
 }
-function vk(e) {
-	return Math.max(0, Math.floor(e.baseAdvances + e.current));
-}
-function yk(e, t) {
+function vk(e, t) {
 	let n = Math.max(0, Math.floor(e)), r = 0;
 	for (let e = 0; e < n; e += 1) {
 		let n = Math.min(Math.floor(e / 5), t.length - 1);
@@ -13919,36 +13938,36 @@ function yk(e, t) {
 	}
 	return r;
 }
-function bk(e, t = 0) {
+function yk(e, t = 0) {
 	let n = Math.max(0, Math.floor(e)), r = Math.max(0, Math.floor(t)), i = 0;
 	for (let e = 0; e < n; e += 1) i += (r + e + 1) * 100;
 	return i;
 }
-function xk(e, t) {
+function bk(e, t) {
 	let n = 0;
 	for (let r of Object.keys(Oc)) {
-		let i = r, a = Tk(e.characteristics[i] ?? 0, t.characteristics[i] ?? 0);
-		n += yk(a, mk.characteristic);
+		let i = r, a = wk(e.characteristics[i] ?? 0, t.characteristics[i] ?? 0);
+		n += vk(a, mk.characteristic);
 	}
 	return n;
 }
-function Sk(e, t, n) {
-	let r = wk(e), i = wk(t), a = 0;
+function xk(e, t, n) {
+	let r = Ck(e), i = Ck(t), a = 0;
 	for (let [e, t] of r) {
-		let r = Tk(t, i.get(e) ?? 0);
-		a += yk(r, n);
+		let r = wk(t, i.get(e) ?? 0);
+		a += vk(r, n);
 	}
 	return a;
 }
-function Ck(e, t) {
-	let n = wk(e), r = wk(t), i = 0;
+function Sk(e, t) {
+	let n = Ck(e), r = Ck(t), i = 0;
 	for (let [e, t] of n) {
-		let n = Tk(t, r.get(e) ?? 0);
-		i += bk(n);
+		let n = wk(t, r.get(e) ?? 0);
+		i += yk(n);
 	}
 	return i;
 }
-function wk(e) {
+function Ck(e) {
 	let t = /* @__PURE__ */ new Map();
 	for (let n of e) {
 		let e = wO(n.name), r = Math.floor(n.value);
@@ -13956,8 +13975,11 @@ function wk(e) {
 	}
 	return t;
 }
-function Tk(e, t) {
+function wk(e, t) {
 	return Math.max(0, Math.floor(e) - Math.floor(t));
+}
+function Tk(e) {
+	return e.kind === "characteristic" ? Math.floor(e.baseValue) : e.kind === "skill" ? Math.floor(e.baseAdvances + (e.baseModifier ?? 0)) : Math.floor(e.baseAdvances);
 }
 //#endregion
 //#region src/state/npc-builder/advancements/index.ts
@@ -15567,10 +15589,10 @@ var oM = { class: "dui-fieldset" }, sM = ["value"], cM = { class: "dui-fieldset"
 }, mM = {
 	key: 0,
 	class: "dui-avatar"
-}, hM = ["src"], gM = {
+}, hM = { class: "app:size-16 app:shrink-0 app:rounded-lg" }, gM = ["src"], _M = {
 	key: 1,
 	class: "dui-badge"
-}, _M = /* @__PURE__ */ P({
+}, vM = /* @__PURE__ */ P({
 	__name: "BaseActorPanel",
 	props: {
 		actorFilter: {},
@@ -15627,10 +15649,13 @@ var oM = { class: "dui-fieldset" }, sM = ["value"], cM = { class: "dui-fieldset"
 					onDropData: a[0] ||= (e) => n("actorDrop", e)
 				}),
 				e.errorMessage ? (L(), R("p", fM, k(e.errorMessage), 1)) : U("", !0),
-				e.selectedBaseActor ? (L(), R("article", pM, [e.selectedBaseActor.img ? (L(), R("div", mM, [B("div", null, [B("img", {
+				e.selectedBaseActor ? (L(), R("article", pM, [e.selectedBaseActor.img ? (L(), R("div", mM, [B("div", hM, [B("img", {
 					src: e.selectedBaseActor.img,
-					alt: ""
-				}, null, 8, hM)])])) : (L(), R("span", gM, k(M(nM)(e.selectedBaseActor.name)), 1)), B("div", null, [B("strong", null, k(e.selectedBaseActor.name), 1), B("span", null, [
+					alt: "",
+					class: "app:h-full app:w-full app:object-cover",
+					height: "64",
+					width: "64"
+				}, null, 8, gM)])])) : (L(), R("span", _M, k(M(nM)(e.selectedBaseActor.name)), 1)), B("div", null, [B("strong", null, k(e.selectedBaseActor.name), 1), B("span", null, [
 					H(k(e.selectedBaseActor.species || "Species not found") + " ", 1),
 					e.selectedBaseActor.type ? (L(), R(I, { key: 0 }, [H(" - " + k(e.selectedBaseActor.type), 1)], 64)) : U("", !0),
 					e.isLoadingBaseDraft ? (L(), R(I, { key: 1 }, [H(" - loading details...")], 64)) : U("", !0)
@@ -15639,20 +15664,20 @@ var oM = { class: "dui-fieldset" }, sM = ["value"], cM = { class: "dui-fieldset"
 			_: 1
 		}));
 	}
-}), vM = { class: "dui-card-actions" }, yM = { class: "dui-stats dui-stats-vertical app:w-full" }, bM = { class: "dui-stat" }, xM = { class: "dui-stat-value" }, SM = {
+}), yM = { class: "dui-card-actions" }, bM = { class: "dui-stats dui-stats-vertical app:w-full" }, xM = { class: "dui-stat" }, SM = { class: "dui-stat-value" }, CM = {
 	key: 0,
 	class: "dui-stat-desc"
-}, CM = { class: "dui-stat" }, wM = { class: "dui-stat-value" }, TM = {
+}, wM = { class: "dui-stat" }, TM = { class: "dui-stat-value" }, EM = {
 	key: 0,
 	class: "dui-stat-desc"
-}, EM = {
+}, DM = {
 	key: 1,
 	class: "dui-stat-desc"
-}, DM = { class: "dui-stat" }, OM = { class: "dui-stat-value" }, kM = { class: "dui-stat" }, AM = { class: "dui-stat-value" }, jM = { class: "dui-stat" }, MM = { class: "dui-stat-value" }, NM = { class: "dui-stat-desc" }, PM = {
+}, OM = { class: "dui-stat" }, kM = { class: "dui-stat-value" }, AM = { class: "dui-stat" }, jM = { class: "dui-stat-value" }, MM = { class: "dui-stat" }, NM = { class: "dui-stat-value" }, PM = { class: "dui-stat-desc" }, FM = {
 	key: 0,
 	class: "dui-alert dui-alert-warning",
 	role: "alert"
-}, FM = { key: 1 }, IM = /* @__PURE__ */ P({
+}, IM = { key: 1 }, LM = /* @__PURE__ */ P({
 	__name: "BuildPreviewPanel",
 	props: {
 		advancementCount: {},
@@ -15672,33 +15697,33 @@ var oM = { class: "dui-fieldset" }, sM = ["value"], cM = { class: "dui-fieldset"
 			title: "Build Preview"
 		}, {
 			default: N(() => [
-				B("div", vM, [B("span", { class: O(["dui-badge", e.buildPreviewStatus === "Ready" ? "dui-badge-success" : "dui-badge-warning"]) }, k(e.buildPreviewStatus), 3)]),
-				B("div", yM, [
-					B("div", bM, [
+				B("div", yM, [B("span", { class: O(["dui-badge", e.buildPreviewStatus === "Ready" ? "dui-badge-success" : "dui-badge-warning"]) }, k(e.buildPreviewStatus), 3)]),
+				B("div", bM, [
+					B("div", xM, [
 						n[0] ||= B("span", { class: "dui-stat-title" }, "Advances", -1),
-						B("strong", xM, k(e.advancementCount), 1),
-						e.editedAdvanceCount ? (L(), R("small", SM, k(e.editedAdvanceCount) + " manually edited ", 1)) : U("", !0)
+						B("strong", SM, k(e.advancementCount), 1),
+						e.editedAdvanceCount ? (L(), R("small", CM, k(e.editedAdvanceCount) + " manually edited ", 1)) : U("", !0)
 					]),
-					B("div", CM, [
+					B("div", wM, [
 						n[1] ||= B("span", { class: "dui-stat-title" }, "Trappings", -1),
-						B("strong", wM, k(e.visibleTrappingCount), 1),
-						e.fallbackTrappingCount ? (L(), R("small", TM, k(e.fallbackTrappingCount) + " blank fallback ", 1)) : U("", !0),
-						e.ignoredTrappingCount ? (L(), R("small", EM, k(e.ignoredTrappingCount) + " ignored ", 1)) : U("", !0)
+						B("strong", TM, k(e.visibleTrappingCount), 1),
+						e.fallbackTrappingCount ? (L(), R("small", EM, k(e.fallbackTrappingCount) + " blank fallback ", 1)) : U("", !0),
+						e.ignoredTrappingCount ? (L(), R("small", DM, k(e.ignoredTrappingCount) + " ignored ", 1)) : U("", !0)
 					]),
-					B("div", DM, [n[2] ||= B("span", { class: "dui-stat-title" }, "Traits", -1), B("strong", OM, k(e.traitCount), 1)]),
-					B("div", kM, [n[3] ||= B("span", { class: "dui-stat-title" }, "Spells", -1), B("strong", AM, k(e.selectedSpellCount), 1)]),
-					B("div", jM, [
+					B("div", OM, [n[2] ||= B("span", { class: "dui-stat-title" }, "Traits", -1), B("strong", kM, k(e.traitCount), 1)]),
+					B("div", AM, [n[3] ||= B("span", { class: "dui-stat-title" }, "Spells", -1), B("strong", jM, k(e.selectedSpellCount), 1)]),
+					B("div", MM, [
 						n[4] ||= B("span", { class: "dui-stat-title" }, "Estimated NPC XP", -1),
-						B("strong", MM, k(e.estimatedNpcXp.total), 1),
-						B("small", NM, k(e.estimatedNpcXp.characteristics) + " char / " + k(e.estimatedNpcXp.skills) + " skill / " + k(e.estimatedNpcXp.talents) + " talent ", 1)
+						B("strong", NM, k(e.estimatedNpcXp.total), 1),
+						B("small", PM, k(e.estimatedNpcXp.characteristics) + " char / " + k(e.estimatedNpcXp.skills) + " skill / " + k(e.estimatedNpcXp.talents) + " talent ", 1)
 					])
 				]),
-				e.buildPreviewWarnings.length ? (L(), R("div", PM, [B("div", null, [(L(!0), R(I, null, F(e.buildPreviewWarnings, (e) => (L(), R("p", { key: e }, k(e), 1))), 128))])])) : (L(), R("p", FM, " The draft has a base Actor, queued Career data, resolved trappings, and a portrait ready to apply. "))
+				e.buildPreviewWarnings.length ? (L(), R("div", FM, [B("div", null, [(L(!0), R(I, null, F(e.buildPreviewWarnings, (e) => (L(), R("p", { key: e }, k(e), 1))), 128))])])) : (L(), R("p", IM, " The draft has a base Actor, queued Career data, resolved trappings, and a portrait ready to apply. "))
 			]),
 			_: 1
 		}));
 	}
-}), LM = { class: "dui-list" }, RM = { class: "dui-list-row" }, zM = { class: "dui-list-row" }, BM = { class: "dui-list-row" }, VM = { class: "dui-list-row" }, HM = { class: "dui-list-row" }, UM = { class: "dui-list-row" }, WM = { class: "dui-list-row" }, GM = /* @__PURE__ */ P({
+}), RM = { class: "dui-list" }, zM = { class: "dui-list-row" }, BM = { class: "dui-list-row" }, VM = { class: "dui-list-row" }, HM = { class: "dui-list-row" }, UM = { class: "dui-list-row" }, WM = { class: "dui-list-row" }, GM = { class: "dui-list-row" }, KM = /* @__PURE__ */ P({
 	__name: "BuildSummaryDetails",
 	props: {
 		advancementCount: {},
@@ -15713,32 +15738,32 @@ var oM = { class: "dui-fieldset" }, sM = ["value"], cM = { class: "dui-fieldset"
 		visibleTrappingCount: {}
 	},
 	setup(e) {
-		return (t, n) => (L(), R("dl", LM, [
-			B("div", RM, [n[0] ||= B("dt", null, "Build name", -1), B("dd", null, k(e.finalActorName), 1)]),
-			B("div", zM, [n[1] ||= B("dt", null, "Base actor", -1), B("dd", null, k(e.baseActorName), 1)]),
-			B("div", BM, [n[2] ||= B("dt", null, "Final career", -1), B("dd", null, k(e.finalCareerName), 1)]),
-			B("div", VM, [n[3] ||= B("dt", null, "Career items", -1), B("dd", null, k(e.careerItemCount), 1)]),
-			B("div", HM, [n[4] ||= B("dt", null, "Apply", -1), B("dd", null, k(e.advancementCount) + " advance rows, " + k(e.visibleTrappingCount) + " trappings, " + k(e.traitCount) + " traits, " + k(e.selectedSpellCount) + " spells ", 1)]),
-			B("div", UM, [n[5] ||= B("dt", null, "Extracted grants", -1), B("dd", null, k(e.grantTotals.characteristics) + " characteristics, " + k(e.grantTotals.skills) + " skills, " + k(e.grantTotals.talents) + " talents, " + k(e.grantTotals.trappings) + " trappings ", 1)]),
-			B("div", WM, [n[6] ||= B("dt", null, "Estimated NPC XP", -1), B("dd", null, k(e.estimatedNpcXpTotal), 1)])
+		return (t, n) => (L(), R("dl", RM, [
+			B("div", zM, [n[0] ||= B("dt", null, "Build name", -1), B("dd", null, k(e.finalActorName), 1)]),
+			B("div", BM, [n[1] ||= B("dt", null, "Base actor", -1), B("dd", null, k(e.baseActorName), 1)]),
+			B("div", VM, [n[2] ||= B("dt", null, "Final career", -1), B("dd", null, k(e.finalCareerName), 1)]),
+			B("div", HM, [n[3] ||= B("dt", null, "Career items", -1), B("dd", null, k(e.careerItemCount), 1)]),
+			B("div", UM, [n[4] ||= B("dt", null, "Apply", -1), B("dd", null, k(e.advancementCount) + " advance rows, " + k(e.visibleTrappingCount) + " trappings, " + k(e.traitCount) + " traits, " + k(e.selectedSpellCount) + " spells ", 1)]),
+			B("div", WM, [n[5] ||= B("dt", null, "Extracted grants", -1), B("dd", null, k(e.grantTotals.characteristics) + " characteristics, " + k(e.grantTotals.skills) + " skills, " + k(e.grantTotals.talents) + " talents, " + k(e.grantTotals.trappings) + " trappings ", 1)]),
+			B("div", GM, [n[6] ||= B("dt", null, "Estimated NPC XP", -1), B("dd", null, k(e.estimatedNpcXpTotal), 1)])
 		]));
 	}
-}), KM = { class: "app:grid app:gap-3" }, qM = { class: "app:flex app:flex-wrap app:items-start app:gap-3" }, JM = ["aria-label", "disabled"], YM = ["src"], XM = { key: 1 }, ZM = { key: 2 }, QM = { class: "app:flex app:min-w-48 app:flex-1 app:flex-col app:items-start app:gap-2" }, $M = ["title"], eN = {
+}), qM = { class: "app:grid app:gap-3" }, JM = { class: "app:flex app:flex-wrap app:items-start app:gap-3" }, YM = ["aria-label", "disabled"], XM = ["src"], ZM = { key: 1 }, QM = { key: 2 }, $M = { class: "app:flex app:min-w-48 app:flex-1 app:flex-col app:items-start app:gap-2" }, eN = ["title"], tN = {
 	key: 1,
 	class: "app:text-base-content/70"
-}, tN = ["disabled"], nN = {
+}, nN = ["disabled"], rN = {
 	key: 0,
 	"aria-live": "polite",
 	role: "status"
-}, rN = ["value"], iN = {
+}, iN = ["value"], aN = {
 	key: 1,
 	class: "dui-fieldset"
-}, aN = { class: "dui-fieldset-legend" }, oN = { key: 0 }, sN = { key: 1 }, cN = { class: "app:flex app:flex-wrap app:gap-2" }, lN = [
+}, oN = { class: "dui-fieldset-legend" }, sN = { key: 0 }, cN = { key: 1 }, lN = { class: "app:flex app:flex-wrap app:gap-2" }, uN = [
 	"aria-label",
 	"aria-pressed",
 	"title",
 	"onClick"
-], uN = ["src"], dN = ["aria-label"], fN = /* @__PURE__ */ P({
+], dN = ["src"], fN = ["aria-label"], pN = /* @__PURE__ */ P({
 	__name: "PortraitPicker",
 	props: {
 		compactPortraitCandidates: {},
@@ -15756,8 +15781,8 @@ var oM = { class: "dui-fieldset" }, sM = ["value"], cM = { class: "dui-fieldset"
 	emits: ["openGallery", "selectPortrait"],
 	setup(e, { emit: t }) {
 		let n = t;
-		return (t, r) => (L(), R("section", KM, [
-			B("div", qM, [B("button", {
+		return (t, r) => (L(), R("section", qM, [
+			B("div", JM, [B("button", {
 				"aria-label": e.portraitCandidates.length ? "Open portrait gallery" : "No portraits available",
 				class: "dui-btn dui-btn-square app:h-32 app:w-32 app:shrink-0 app:overflow-hidden app:p-1",
 				disabled: !e.portraitCandidates.length,
@@ -15771,28 +15796,28 @@ var oM = { class: "dui-fieldset" }, sM = ["value"], cM = { class: "dui-fieldset"
 				height: "192",
 				src: e.finalPortraitPath,
 				width: "192"
-			}, null, 8, YM)) : e.finalCareer ? (L(), R("strong", XM, k(M(nM)(e.finalCareer.name)), 1)) : (L(), R("span", ZM, "No portrait"))], 8, JM), B("div", QM, [
+			}, null, 8, XM)) : e.finalCareer ? (L(), R("strong", ZM, k(M(nM)(e.finalCareer.name)), 1)) : (L(), R("span", QM, "No portrait"))], 8, YM), B("div", $M, [
 				r[3] ||= B("span", { class: "dui-badge dui-badge-outline" }, "Current portrait", -1),
 				B("strong", null, k(e.selectedPortraitCandidate?.label ?? "No portrait selected"), 1),
 				e.finalPortraitPath ? (L(), R("small", {
 					key: 0,
 					class: "app:break-all app:text-base-content/70",
 					title: e.finalPortraitPath
-				}, k(e.finalPortraitPath), 9, $M)) : (L(), R("span", eN, " A Career or base Actor image will be used when available. ")),
+				}, k(e.finalPortraitPath), 9, eN)) : (L(), R("span", tN, " A Career or base Actor image will be used when available. ")),
 				B("button", {
 					class: "dui-btn dui-btn-outline dui-btn-sm",
 					disabled: !e.portraitCandidates.length,
 					type: "button",
 					onClick: r[1] ||= (e) => n("openGallery")
-				}, " Browse " + k(e.portraitCandidates.length) + " portraits ", 9, tN)
+				}, " Browse " + k(e.portraitCandidates.length) + " portraits ", 9, nN)
 			])]),
-			e.isLoadingPortraitCandidates && e.portraitSearchProgress ? (L(), R("div", nN, [B("progress", {
+			e.isLoadingPortraitCandidates && e.portraitSearchProgress ? (L(), R("div", rN, [B("progress", {
 				"aria-label": "Portrait search progress",
 				class: "dui-progress dui-progress-info app:w-full",
 				value: e.portraitSearchProgressValue,
 				max: "100"
-			}, null, 8, rN), B("small", null, k(e.portraitSearchProgressLabel), 1)])) : U("", !0),
-			e.portraitCandidates.length || e.isLoadingPortraitCandidates ? (L(), R("fieldset", iN, [B("legend", aN, [r[4] ||= B("span", null, "Quick picks", -1), e.isLoadingPortraitCandidates ? (L(), R("span", oN, "Updating...")) : (L(), R("span", sN, k(e.portraitCandidates.length) + " options", 1))]), B("div", cN, [(L(!0), R(I, null, F(e.compactPortraitCandidates, (t) => (L(), R("button", {
+			}, null, 8, iN), B("small", null, k(e.portraitSearchProgressLabel), 1)])) : U("", !0),
+			e.portraitCandidates.length || e.isLoadingPortraitCandidates ? (L(), R("fieldset", aN, [B("legend", oN, [r[4] ||= B("span", null, "Quick picks", -1), e.isLoadingPortraitCandidates ? (L(), R("span", sN, "Updating...")) : (L(), R("span", cN, k(e.portraitCandidates.length) + " options", 1))]), B("div", lN, [(L(!0), R(I, null, F(e.compactPortraitCandidates, (t) => (L(), R("button", {
 				key: t.key,
 				"aria-label": M(iM)(t),
 				"aria-pressed": t.key === e.selectedPortraitCandidateKey,
@@ -15807,19 +15832,19 @@ var oM = { class: "dui-fieldset" }, sM = ["value"], cM = { class: "dui-fieldset"
 				loading: "lazy",
 				src: t.img,
 				width: "64"
-			}, null, 8, uN)], 10, lN))), 128)), e.hiddenPortraitCandidateCount > 0 ? (L(), R("button", {
+			}, null, 8, dN)], 10, uN))), 128)), e.hiddenPortraitCandidateCount > 0 ? (L(), R("button", {
 				key: 0,
 				"aria-label": `Open ${e.hiddenPortraitCandidateCount} more portrait options`,
 				class: "dui-btn dui-btn-square",
 				type: "button",
 				onClick: r[2] ||= (e) => n("openGallery")
-			}, " +" + k(e.hiddenPortraitCandidateCount), 9, dN)) : U("", !0)])])) : U("", !0)
+			}, " +" + k(e.hiddenPortraitCandidateCount), 9, fN)) : U("", !0)])])) : U("", !0)
 		]));
 	}
-}), pN = {
+}), mN = {
 	key: 0,
 	class: "dui-fieldset"
-}, mN = { class: "dui-fieldset-legend" }, hN = { class: "dui-card-actions" }, gN = ["aria-pressed", "onClick"], _N = /* @__PURE__ */ P({
+}, hN = { class: "dui-fieldset-legend" }, gN = { class: "dui-card-actions" }, _N = ["aria-pressed", "onClick"], vN = /* @__PURE__ */ P({
 	__name: "TraitButtonGroup",
 	props: {
 		caption: {},
@@ -15829,15 +15854,15 @@ var oM = { class: "dui-fieldset" }, sM = ["value"], cM = { class: "dui-fieldset"
 	emits: ["toggleTrait"],
 	setup(e, { emit: t }) {
 		let n = t;
-		return (t, r) => e.traits.length ? (L(), R("fieldset", pN, [B("legend", mN, [B("span", null, k(e.title), 1), B("span", null, k(e.caption), 1)]), B("div", hN, [(L(!0), R(I, null, F(e.traits, (e) => (L(), R("button", {
+		return (t, r) => e.traits.length ? (L(), R("fieldset", mN, [B("legend", hN, [B("span", null, k(e.title), 1), B("span", null, k(e.caption), 1)]), B("div", gN, [(L(!0), R(I, null, F(e.traits, (e) => (L(), R("button", {
 			key: e.uuid,
 			"aria-pressed": e.isSelected,
 			class: O(["dui-btn dui-btn-sm", { "dui-btn-active": e.isSelected }]),
 			type: "button",
 			onClick: (t) => n("toggleTrait", e)
-		}, k(e.name), 11, gN))), 128))])])) : U("", !0);
+		}, k(e.name), 11, _N))), 128))])])) : U("", !0);
 	}
-}), vN = { class: "app:grid app:gap-3" }, yN = { class: "dui-fieldset" }, bN = ["placeholder", "value"], xN = { class: "dui-collapse dui-collapse-arrow dui-card-border" }, SN = { class: "dui-collapse-content" }, CN = /* @__PURE__ */ P({
+}), yN = { class: "app:grid app:gap-3" }, bN = { class: "dui-fieldset" }, xN = ["placeholder", "value"], SN = { class: "dui-collapse dui-collapse-arrow dui-card-border" }, CN = { class: "dui-collapse-content" }, wN = /* @__PURE__ */ P({
 	__name: "BuildSidebar",
 	props: {
 		actorName: {},
@@ -15883,14 +15908,14 @@ var oM = { class: "dui-fieldset" }, sM = ["value"], cM = { class: "dui-fieldset"
 			let t = e.target;
 			n("actorNameChange", t?.value ?? "");
 		}
-		return (t, i) => (L(), R("aside", vN, [
+		return (t, i) => (L(), R("aside", yN, [
 			V(_j, {
 				description: "Choose the generated Actor's name, portrait, and optional traits.",
 				number: "3",
 				title: "Identity and Traits"
 			}, {
 				default: N(() => [
-					V(fN, {
+					V(pN, {
 						"compact-portrait-candidates": e.compactPortraitCandidates,
 						"final-career": e.finalCareer,
 						"final-portrait-path": e.finalPortraitPath,
@@ -15917,21 +15942,21 @@ var oM = { class: "dui-fieldset" }, sM = ["value"], cM = { class: "dui-fieldset"
 						"selected-portrait-candidate",
 						"selected-portrait-candidate-key"
 					]),
-					B("fieldset", yN, [i[4] ||= B("legend", { class: "dui-fieldset-legend" }, "NPC name", -1), B("input", {
+					B("fieldset", bN, [i[4] ||= B("legend", { class: "dui-fieldset-legend" }, "NPC name", -1), B("input", {
 						"aria-label": "NPC name",
 						class: "dui-input dui-input-sm",
 						placeholder: e.suggestedActorName,
 						value: e.actorName,
 						type: "text",
 						onInput: r
-					}, null, 40, bN)]),
-					V(_N, {
+					}, null, 40, xN)]),
+					V(vN, {
 						caption: `${e.optionalTraitOptions.length} from base statblock`,
 						traits: e.optionalTraitOptions,
 						title: "Optional Traits",
 						onToggleTrait: i[2] ||= (e) => n("toggleOptionalTrait", e)
 					}, null, 8, ["caption", "traits"]),
-					V(_N, {
+					V(vN, {
 						caption: `${e.quickTraitOptions.length} configured`,
 						traits: e.quickTraitOptions,
 						title: "Quick Traits",
@@ -15940,7 +15965,7 @@ var oM = { class: "dui-fieldset" }, sM = ["value"], cM = { class: "dui-fieldset"
 				]),
 				_: 1
 			}),
-			V(IM, {
+			V(LM, {
 				"advancement-count": e.advancementCount,
 				"build-preview-status": e.buildPreviewStatus,
 				"build-preview-warnings": e.buildPreviewWarnings,
@@ -15963,7 +15988,7 @@ var oM = { class: "dui-fieldset" }, sM = ["value"], cM = { class: "dui-fieldset"
 				"trait-count",
 				"visible-trapping-count"
 			]),
-			B("details", xN, [i[5] ||= B("summary", { class: "dui-collapse-title" }, "Complete build details", -1), B("div", SN, [V(GM, {
+			B("details", SN, [i[5] ||= B("summary", { class: "dui-collapse-title" }, "Complete build details", -1), B("div", CN, [V(KM, {
 				"advancement-count": e.advancementCount,
 				"base-actor-name": e.selectedBaseActor?.name ?? "Not selected",
 				"career-item-count": e.careerItemCount,
@@ -15988,33 +16013,29 @@ var oM = { class: "dui-fieldset" }, sM = ["value"], cM = { class: "dui-fieldset"
 			])])])
 		]));
 	}
-}), wN = {
+}), TN = {
 	key: 0,
-	class: "dui-list"
-}, TN = [
+	class: "dui-list app:gap-1"
+}, EN = [
 	"onDragenter",
 	"onDragover",
 	"onDrop"
-], EN = ["onDragstart"], DN = {
+], DN = ["onDragstart"], ON = {
 	key: 0,
 	class: "dui-avatar"
-}, ON = ["src"], kN = {
+}, kN = { class: "app:size-10 app:rounded-md" }, AN = ["src"], jN = {
 	key: 1,
-	class: "dui-badge"
-}, AN = { class: "dui-list-col-grow" }, jN = {
+	class: "dui-badge dui-badge-sm"
+}, MN = { class: "dui-list-col-grow app:min-w-0" }, NN = { class: "app:flex app:min-w-0 app:flex-wrap app:items-center app:gap-1" }, PN = { class: "app:truncate" }, FN = {
 	key: 0,
-	class: "dui-badge dui-badge-info"
-}, MN = {
+	class: "dui-badge dui-badge-info dui-badge-xs"
+}, IN = {
 	key: 1,
-	class: "dui-badge dui-badge-info"
-}, NN = ["title"], PN = { class: "dui-card-actions" }, FN = { class: "dui-fieldset" }, IN = [
-	"aria-label",
-	"value",
-	"onInput"
-], LN = { class: "dui-join" }, RN = ["disabled", "onClick"], zN = ["disabled", "onClick"], BN = ["onClick"], VN = {
+	class: "dui-badge dui-badge-info dui-badge-xs"
+}, LN = { class: "app:flex app:min-w-0 app:items-center app:gap-2 app:text-xs" }, RN = { class: "app:shrink-0" }, zN = ["title"], BN = { class: "app:flex app:items-center app:justify-end app:gap-1" }, VN = { class: "app:flex app:items-center app:gap-1 app:text-xs" }, HN = ["value", "onInput"], UN = { class: "dui-join" }, WN = ["disabled", "onClick"], GN = ["disabled", "onClick"], KN = ["onClick"], qN = {
 	key: 1,
 	class: "dui-alert"
-}, HN = /* @__PURE__ */ P({
+}, JN = /* @__PURE__ */ P({
 	__name: "CareerQueuePanel",
 	props: {
 		careers: {},
@@ -16033,8 +16054,11 @@ var oM = { class: "dui-fieldset" }, sM = ["value"], cM = { class: "dui-fieldset"
 		"removeCareer"
 	],
 	setup(e, { emit: t }) {
-		let n = t;
-		return (t, r) => (L(), z(_j, {
+		let n = e, r = t;
+		function i(e) {
+			return n.draggedCareerIndex === null || n.draggedCareerIndex === e || n.dragOverCareerIndex !== e ? null : n.draggedCareerIndex < e ? "after" : "before";
+		}
+		return (t, n) => (L(), z(_j, {
 			description: "Careers are applied in this order. Drag rows or use the buttons to reorder them.",
 			number: "2",
 			title: "Career Queue"
@@ -16043,102 +16067,103 @@ var oM = { class: "dui-fieldset" }, sM = ["value"], cM = { class: "dui-fieldset"
 				description: "Drop in build order. Drag rows to reorder.",
 				title: "Drop Career Items",
 				variant: "compact",
-				onDropData: r[0] ||= (e) => n("careerDrop", e)
-			}), e.careers.length ? (L(), R("ol", wN, [(L(!0), R(I, null, F(e.careers, (t, i) => (L(), R("li", {
+				onDropData: n[0] ||= (e) => r("careerDrop", e)
+			}), e.careers.length ? (L(), R("ol", TN, [(L(!0), R(I, null, F(e.careers, (t, a) => (L(), R("li", {
 				key: t.uuid,
-				class: "dui-list-row",
-				onDragenter: Yo((e) => n("careerDragEnter", i), ["prevent"]),
-				onDragover: (e) => n("careerDragOver", i, e),
-				onDrop: (e) => n("careerDropOnRow", i, e)
+				class: O(["dui-list-row app:grid-cols-[auto_auto_minmax(0,1fr)_auto] app:items-center app:gap-2 app:rounded-md app:px-2 app:py-2", {
+					"app:border-t-2 app:border-dashed app:border-info": i(a) === "before",
+					"app:border-b-2 app:border-dashed app:border-info": i(a) === "after",
+					"app:opacity-60": e.draggedCareerIndex === a
+				}]),
+				onDragenter: Yo((e) => r("careerDragEnter", a), ["prevent"]),
+				onDragover: (e) => r("careerDragOver", a, e),
+				onDrop: (e) => r("careerDropOnRow", a, e)
 			}, [
 				B("span", {
 					"aria-hidden": "true",
-					class: "dui-badge",
+					class: O(["dui-badge dui-badge-ghost dui-badge-sm app:cursor-grab", { "app:cursor-grabbing": e.draggedCareerIndex === a }]),
 					draggable: "true",
 					title: "Drag to reorder",
-					onDragend: r[1] ||= (e) => n("careerDragEnd"),
-					onDragstart: (e) => n("careerDragStart", i, e)
-				}, " Drag ", 40, EN),
-				t.img ? (L(), R("div", DN, [B("div", null, [B("img", {
+					onDragend: n[1] ||= (e) => r("careerDragEnd"),
+					onDragstart: (e) => r("careerDragStart", a, e)
+				}, " Drag ", 42, DN),
+				t.img ? (L(), R("div", ON, [B("div", kN, [B("img", {
 					src: t.img,
-					alt: ""
-				}, null, 8, ON)])])) : (L(), R("span", kN, k(M(nM)(t.name)), 1)),
-				B("div", AN, [
-					B("strong", null, k(t.name), 1),
-					e.draggedCareerIndex === i ? (L(), R("span", jN, " Dragging ")) : e.dragOverCareerIndex === i ? (L(), R("span", MN, " Drop here ")) : U("", !0),
-					B("span", null, [H(k(t.careerGroup || "Career") + " ", 1), t.level === null ? U("", !0) : (L(), R(I, { key: 0 }, [H(" level " + k(t.level), 1)], 64))]),
-					B("small", {
-						class: "dui-badge dui-badge-ghost",
-						title: [
-							`Characteristics: ${M(tM)(t.grants.characteristics)}`,
-							`Skills: ${M(tM)(t.grants.skills)}`,
-							`Talents: ${M(tM)(t.grants.talents)}`,
-							`Trappings: ${M(tM)(t.grants.trappings)}`
-						].join("\n")
-					}, k(M(eM)(t)), 9, NN),
-					B("div", PN, [B("fieldset", FN, [r[2] ||= B("legend", { class: "dui-fieldset-legend" }, "Quantity", -1), B("input", {
-						"aria-label": `Quantity for ${t.name}`,
-						class: "dui-input dui-input-sm",
-						value: t.quantity,
-						min: "1",
-						type: "number",
-						onInput: (e) => n("careerQuantityInput", i, e)
-					}, null, 40, IN)]), B("div", LN, [
-						B("button", {
-							class: "dui-join-item dui-btn dui-btn-sm",
-							disabled: i === 0,
-							title: "Move career earlier",
-							type: "button",
-							onClick: (e) => n("moveCareer", i, -1)
-						}, " Up ", 8, RN),
-						B("button", {
-							class: "dui-join-item dui-btn dui-btn-sm",
-							disabled: i === e.careers.length - 1,
-							title: "Move career later",
-							type: "button",
-							onClick: (e) => n("moveCareer", i, 1)
-						}, " Down ", 8, zN),
-						B("button", {
-							class: "dui-join-item dui-btn dui-btn-sm",
-							type: "button",
-							onClick: (e) => n("removeCareer", i)
-						}, " Remove ", 8, BN)
-					])])
-				])
-			], 40, TN))), 128))])) : (L(), R("p", VN, "No careers queued yet."))]),
+					alt: "",
+					class: "app:h-full app:w-full app:object-cover",
+					height: "40",
+					width: "40"
+				}, null, 8, AN)])])) : (L(), R("span", jN, k(M(nM)(t.name)), 1)),
+				B("div", MN, [B("div", NN, [B("strong", PN, k(t.name), 1), e.draggedCareerIndex === a ? (L(), R("span", FN, " Dragging ")) : i(a) ? (L(), R("span", IN, " Place " + k(i(a)), 1)) : U("", !0)]), B("div", LN, [B("span", RN, [H(k(t.careerGroup || "Career") + " ", 1), t.level === null ? U("", !0) : (L(), R(I, { key: 0 }, [H(" level " + k(t.level), 1)], 64))]), B("small", {
+					class: "dui-badge dui-badge-ghost dui-badge-sm app:min-w-0 app:truncate",
+					title: [
+						`Characteristics: ${M(tM)(t.grants.characteristics)}`,
+						`Skills: ${M(tM)(t.grants.skills)}`,
+						`Talents: ${M(tM)(t.grants.talents)}`,
+						`Trappings: ${M(tM)(t.grants.trappings)}`
+					].join("\n")
+				}, k(M(eM)(t)), 9, zN)])]),
+				B("div", BN, [B("label", VN, [n[2] ||= H(" Qty ", -1), B("input", {
+					class: "dui-input dui-input-xs app:w-14",
+					value: t.quantity,
+					min: "1",
+					type: "number",
+					onInput: (e) => r("careerQuantityInput", a, e)
+				}, null, 40, HN)]), B("div", UN, [
+					B("button", {
+						class: "dui-join-item dui-btn dui-btn-xs",
+						disabled: a === 0,
+						title: "Move career earlier",
+						type: "button",
+						onClick: (e) => r("moveCareer", a, -1)
+					}, " Up ", 8, WN),
+					B("button", {
+						class: "dui-join-item dui-btn dui-btn-xs",
+						disabled: a === e.careers.length - 1,
+						title: "Move career later",
+						type: "button",
+						onClick: (e) => r("moveCareer", a, 1)
+					}, " Down ", 8, GN),
+					B("button", {
+						class: "dui-join-item dui-btn dui-btn-xs",
+						type: "button",
+						onClick: (e) => r("removeCareer", a)
+					}, " Remove ", 8, KN)
+				])])
+			], 42, EN))), 128))])) : (L(), R("p", qN, "No careers queued yet."))]),
 			_: 1
 		}));
 	}
-}), UN = ["aria-busy"], WN = { class: "app:flex app:flex-wrap app:items-start app:justify-between app:gap-2" }, GN = { class: "dui-badge dui-badge-outline" }, KN = {
+}), YN = ["aria-busy"], XN = { class: "app:flex app:flex-wrap app:items-start app:justify-between app:gap-2" }, ZN = { class: "dui-badge dui-badge-outline" }, QN = {
 	key: 0,
 	class: "dui-fieldset"
-}, qN = { class: "app:flex app:flex-wrap app:gap-2" }, JN = [
+}, $N = { class: "app:flex app:flex-wrap app:gap-2" }, eP = [
 	"aria-label",
 	"aria-pressed",
 	"onClick"
-], YN = {
+], tP = {
 	key: 1,
 	"aria-live": "polite",
 	class: "dui-alert dui-alert-info",
 	role: "status"
-}, XN = { class: "app:flex-1" }, ZN = ["value"], QN = {
+}, nP = { class: "app:flex-1" }, rP = ["value"], iP = {
 	key: 2,
 	class: "dui-alert dui-alert-warning"
-}, $N = {
+}, aP = {
 	key: 3,
 	class: "app:max-h-[26rem] app:overflow-y-auto app:pr-1"
-}, eP = { class: "dui-list app:m-0 app:grid app:grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] app:gap-3 app:p-0" }, tP = [
+}, oP = { class: "dui-list app:m-0 app:grid app:grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] app:gap-3 app:p-0" }, sP = [
 	"aria-label",
 	"aria-pressed",
 	"title",
 	"onClick"
-], nP = ["src"], rP = { class: "app:flex app:flex-wrap app:items-center app:justify-between app:gap-1" }, iP = {
+], cP = ["src"], lP = { class: "app:flex app:flex-wrap app:items-center app:justify-between app:gap-1" }, uP = {
 	key: 0,
 	class: "dui-badge dui-badge-success dui-badge-sm"
-}, aP = { class: "app:text-sm" }, oP = {
+}, dP = { class: "app:text-sm" }, fP = {
 	key: 4,
 	class: "dui-alert"
-}, sP = /* @__PURE__ */ P({
+}, pP = /* @__PURE__ */ P({
 	__name: "PortraitGallery",
 	props: {
 		activePortraitSearchTerms: {},
@@ -16172,35 +16197,35 @@ var oM = { class: "dui-fieldset" }, sM = ["value"], cM = { class: "dui-fieldset"
 				"aria-busy": e.isLoadingPortraitCandidates,
 				class: "app:grid app:gap-3"
 			}, [
-				B("header", WN, [n[2] ||= B("div", null, [B("p", { class: "app:m-0" }, "Select a portrait to apply it immediately to this draft."), B("small", { class: "app:text-base-content/70" }, " Career and base Actor images remain available regardless of search terms. ")], -1), B("span", GN, k(e.portraitCandidates.length) + " options ", 1)]),
-				e.portraitSearchTerms.length ? (L(), R("fieldset", KN, [
+				B("header", XN, [n[2] ||= B("div", null, [B("p", { class: "app:m-0" }, "Select a portrait to apply it immediately to this draft."), B("small", { class: "app:text-base-content/70" }, " Career and base Actor images remain available regardless of search terms. ")], -1), B("span", ZN, k(e.portraitCandidates.length) + " options ", 1)]),
+				e.portraitSearchTerms.length ? (L(), R("fieldset", QN, [
 					n[3] ||= B("legend", { class: "dui-fieldset-legend" }, "Match any enabled search term", -1),
 					n[4] ||= B("p", { class: "dui-fieldset-label" }, " Turn off broad words that attract the wrong art. Results can remain when they match another enabled term. ", -1),
-					B("div", qN, [(L(!0), R(I, null, F(e.portraitSearchTerms, (e) => (L(), R("button", {
+					B("div", $N, [(L(!0), R(I, null, F(e.portraitSearchTerms, (e) => (L(), R("button", {
 						key: e,
 						"aria-label": `${i(e) ? "Disable" : "Enable"} search term ${e}`,
 						"aria-pressed": i(e),
 						class: O(["dui-btn dui-btn-sm", i(e) ? "dui-btn-outline" : "dui-btn-ghost"]),
 						type: "button",
 						onClick: (t) => r("toggleSearchTerm", e)
-					}, [B("span", null, k(e), 1), B("span", { class: O(["dui-badge dui-badge-sm", i(e) ? "dui-badge-success" : "dui-badge-ghost"]) }, k(i(e) ? "On" : "Off"), 3)], 10, JN))), 128)), e.activePortraitSearchTerms.length < e.portraitSearchTerms.length ? (L(), R("button", {
+					}, [B("span", null, k(e), 1), B("span", { class: O(["dui-badge dui-badge-sm", i(e) ? "dui-badge-success" : "dui-badge-ghost"]) }, k(i(e) ? "On" : "Off"), 3)], 10, eP))), 128)), e.activePortraitSearchTerms.length < e.portraitSearchTerms.length ? (L(), R("button", {
 						key: 0,
 						class: "dui-btn dui-btn-sm",
 						type: "button",
 						onClick: n[0] ||= (e) => r("enableAllSearchTerms")
 					}, " Enable all ")) : U("", !0)])
 				])) : U("", !0),
-				e.isLoadingPortraitCandidates ? (L(), R("div", YN, [B("div", XN, [
+				e.isLoadingPortraitCandidates ? (L(), R("div", tP, [B("div", nP, [
 					n[5] ||= B("strong", null, "Updating portrait results...", -1),
 					B("progress", {
 						"aria-label": "Portrait search progress",
 						class: "dui-progress dui-progress-info app:w-full",
 						value: e.portraitSearchProgressValue,
 						max: "100"
-					}, null, 8, ZN),
+					}, null, 8, rP),
 					B("small", null, k(e.portraitSearchProgressLabel), 1)
-				])])) : e.portraitSearchTerms.length && !e.activePortraitSearchTerms.length ? (L(), R("p", QN, " All search terms are off. Only the base Actor and queued Career portraits are shown. ")) : U("", !0),
-				e.portraitCandidates.length ? (L(), R("div", $N, [B("ul", eP, [(L(!0), R(I, null, F(e.portraitCandidates, (t) => (L(), R("li", { key: t.key }, [B("button", {
+				])])) : e.portraitSearchTerms.length && !e.activePortraitSearchTerms.length ? (L(), R("p", iP, " All search terms are off. Only the base Actor and queued Career portraits are shown. ")) : U("", !0),
+				e.portraitCandidates.length ? (L(), R("div", aP, [B("ul", oP, [(L(!0), R(I, null, F(e.portraitCandidates, (t) => (L(), R("li", { key: t.key }, [B("button", {
 					"aria-label": M(iM)(t),
 					"aria-pressed": t.key === e.selectedPortraitCandidateKey,
 					class: O(["dui-btn app:h-auto app:min-h-0 app:w-full app:flex-col app:items-stretch app:justify-start app:gap-2 app:overflow-hidden app:whitespace-normal app:p-2 app:text-left", t.key === e.selectedPortraitCandidateKey ? "dui-btn-active dui-btn-outline" : "dui-btn-ghost"]),
@@ -16215,23 +16240,23 @@ var oM = { class: "dui-fieldset" }, sM = ["value"], cM = { class: "dui-fieldset"
 						loading: "lazy",
 						src: t.img,
 						width: "192"
-					}, null, 8, nP),
-					B("span", rP, [B("small", null, k(M(aM)(t.source)), 1), t.key === e.selectedPortraitCandidateKey ? (L(), R("span", iP, " Selected ")) : U("", !0)]),
-					B("strong", aP, k(t.label), 1)
-				], 10, tP)]))), 128))])])) : e.isLoadingPortraitCandidates ? U("", !0) : (L(), R("p", oP, " No portraits are available yet. Choose a base Actor or queue a Career to start the search. "))
-			], 8, UN)]),
+					}, null, 8, cP),
+					B("span", lP, [B("small", null, k(M(aM)(t.source)), 1), t.key === e.selectedPortraitCandidateKey ? (L(), R("span", uP, " Selected ")) : U("", !0)]),
+					B("strong", dP, k(t.label), 1)
+				], 10, sP)]))), 128))])])) : e.isLoadingPortraitCandidates ? U("", !0) : (L(), R("p", fP, " No portraits are available yet. Choose a base Actor or queue a Career to start the search. "))
+			], 8, YN)]),
 			_: 1
 		}, 8, ["open"]));
 	}
 });
 //#endregion
 //#region src/view/apps/npc-builder/components/NpcBuilderBuildTab/errors.ts
-function cP(e) {
+function mP(e) {
 	return e instanceof Error ? e.message : "The NPC Builder could not resolve that Actor drop.";
 }
 //#endregion
 //#region src/view/apps/npc-builder/components/NpcBuilderBuildTab/useBaseActorSelection.ts
-function lP(e, t) {
+function hP(e, t) {
 	let n = LA(), { baseActors: r, selectedBaseActorUuid: i } = oc(n), a = /* @__PURE__ */ j(""), o = W(() => {
 		let e = a.value.trim().toLocaleLowerCase();
 		return e ? r.value.filter((t) => t.name.toLocaleLowerCase().includes(e)) : r.value;
@@ -16246,7 +16271,7 @@ function lP(e, t) {
 		try {
 			n.selectBaseActor(await e.resolveActorDrop(r));
 		} catch (e) {
-			t.value = cP(e);
+			t.value = mP(e);
 		}
 	}
 	return {
@@ -16258,7 +16283,7 @@ function lP(e, t) {
 }
 //#endregion
 //#region src/view/apps/npc-builder/components/NpcBuilderBuildTab/useBuildPreview.ts
-function uP() {
+function gP() {
 	let { advancements: e, careers: t, finalPortraitPath: n, selectedBaseActor: r, trappings: i } = oc(LA()), a = W(() => {
 		let e = 0;
 		for (let n of t.value) e += n.quantity;
@@ -16279,23 +16304,23 @@ function uP() {
 }
 //#endregion
 //#region src/view/apps/npc-builder/components/NpcBuilderBuildTab/useBuildTraits.ts
-function dP() {
-	let e = LA(), { optionalTraits: t, quickTraits: n, traits: r } = oc(e), i = W(() => new Set(r.value.map((e) => fP(e.name)))), a = W(() => t.value.map(s)), o = W(() => {
-		let e = new Set(t.value.map((e) => fP(e.name)));
-		return n.value.filter((t) => !e.has(fP(t.name))).map(s);
+function _P() {
+	let e = LA(), { optionalTraits: t, quickTraits: n, traits: r } = oc(e), i = W(() => new Set(r.value.map((e) => vP(e.name)))), a = W(() => t.value.map(s)), o = W(() => {
+		let e = new Set(t.value.map((e) => vP(e.name)));
+		return n.value.filter((t) => !e.has(vP(t.name))).map(s);
 	});
 	function s(e) {
 		return {
 			...e,
-			isSelected: i.value.has(fP(e.name))
+			isSelected: i.value.has(vP(e.name))
 		};
 	}
 	function c(t) {
-		let n = i.value.has(fP(t.name));
+		let n = i.value.has(vP(t.name));
 		e.setQuickTraitSelected(t, !n);
 	}
 	function l(t) {
-		let n = i.value.has(fP(t.name));
+		let n = i.value.has(vP(t.name));
 		e.setOptionalTraitSelected(t, !n);
 	}
 	return {
@@ -16305,12 +16330,12 @@ function dP() {
 		toggleQuickTrait: c
 	};
 }
-function fP(e) {
+function vP(e) {
 	return e.trim().toLocaleLowerCase();
 }
 //#endregion
 //#region src/view/apps/npc-builder/components/NpcBuilderBuildTab/useCareerQueue.ts
-function pP() {
+function yP() {
 	let e = LA(), t = /* @__PURE__ */ j(null), n = /* @__PURE__ */ j(null);
 	function r(t, n) {
 		let r = n.target;
@@ -16352,7 +16377,7 @@ function pP() {
 }
 //#endregion
 //#region src/functions/npc-builder/portrait-candidates.ts
-var mP = new Set([
+var bP = new Set([
 	"and",
 	"any",
 	"the",
@@ -16362,7 +16387,7 @@ var mP = new Set([
 	"or",
 	"npc"
 ]);
-function hP(e) {
+function xP(e) {
 	let t = [];
 	for (let n of [...e.careers].reverse()) n.img && t.push({
 		img: n.img,
@@ -16380,23 +16405,23 @@ function hP(e) {
 		key: `base-token:${e.selectedBaseActor.uuid}`,
 		label: `${e.selectedBaseActor.name} token`,
 		source: "base-token"
-	}), yP(t);
+	}), TP(t);
 }
-function gP(e) {
+function SP(e) {
 	let t = [];
 	e.selectedBaseActor && t.push(e.selectedBaseActor.species, e.selectedBaseActor.name);
 	for (let n of e.careers) t.push(n.name, n.careerGroup);
-	return DP(t.flatMap((e) => EP(e)).filter((e) => e.length >= 3 && !mP.has(e)));
+	return NP(t.flatMap((e) => MP(e)).filter((e) => e.length >= 3 && !bP.has(e)));
 }
-function _P(e, t) {
+function CP(e, t) {
 	let n = new Set(t);
 	return e.filter((e) => !n.has(e));
 }
-function vP(e, t) {
-	let n = TP(e);
+function wP(e, t) {
+	let n = jP(e);
 	return n ? t.some((e) => n.includes(e)) : !1;
 }
-function yP(e) {
+function TP(e) {
 	let t = /* @__PURE__ */ new Set(), n = [];
 	for (let r of e) {
 		let e = r.img.trim().toLocaleLowerCase();
@@ -16404,49 +16429,49 @@ function yP(e) {
 	}
 	return n;
 }
-function bP(e) {
-	let t = yP([...hP(e), ...e.assetCandidates]);
-	return !e.selectedPortraitPath || t.some((t) => wP(t.img) === wP(e.selectedPortraitPath)) ? t : [{
+function EP(e) {
+	let t = TP([...xP(e), ...e.assetCandidates]);
+	return !e.selectedPortraitPath || t.some((t) => AP(t.img) === AP(e.selectedPortraitPath)) ? t : [{
 		img: e.selectedPortraitPath,
 		key: `selected:${e.selectedPortraitPath}`,
 		label: "Selected portrait",
 		source: "foundry-asset"
 	}, ...t];
 }
-function xP(e) {
+function DP(e) {
 	let t = e.settings.searchCompendiumPortraitAssets || e.settings.searchFoundryPortraitAssets, n = !!e.selectedBaseActor || e.careers.length > 0;
 	return t && n && e.searchTerms.length > 0;
 }
-function SP(e) {
+function OP(e) {
 	return e ? e.maxDirectories <= 0 ? e.phase === "ready" ? 100 : 4 : Math.min(100, Math.round(e.directoriesVisited / e.maxDirectories * 100)) : 0;
 }
-function CP(e) {
+function kP(e) {
 	return e ? e.phase === "ready" ? `${e.candidatesFound} options found` : e.phase === "filesystem" ? e.maxDirectories <= 0 ? `${e.directoriesVisited} directories - ${e.currentLocation}` : `${e.directoriesVisited}/${e.maxDirectories} directories - ${e.currentLocation}` : e.currentLocation : "";
 }
-function wP(e) {
+function AP(e) {
 	return e.trim().toLocaleLowerCase();
 }
-function TP(e) {
+function jP(e) {
 	return e.trim().toLocaleLowerCase().replaceAll(/[_-]/g, " ").replaceAll(/[(),.:;[\]]/g, " ").replaceAll(/\s+/g, " ");
 }
-function EP(e) {
-	return TP(e).split(" ").filter(Boolean);
+function MP(e) {
+	return jP(e).split(" ").filter(Boolean);
 }
-function DP(e) {
+function NP(e) {
 	return [...new Set(e)];
 }
 //#endregion
 //#region src/state/npc-builder/workflows/portrait-candidates-workflow.ts
-function OP(e, t) {
-	let n = LA(), { careers: r, disabledPortraitSearchTerms: i, finalPortraitPath: a, selectedBaseActor: o, selectedPortraitPath: s, settings: c } = oc(n), l = /* @__PURE__ */ j([]), u = /* @__PURE__ */ j(!1), d = /* @__PURE__ */ j(null), f = 0, p = W(() => bP({
+function PP(e, t) {
+	let n = LA(), { careers: r, disabledPortraitSearchTerms: i, finalPortraitPath: a, selectedBaseActor: o, selectedPortraitPath: s, settings: c } = oc(n), l = /* @__PURE__ */ j([]), u = /* @__PURE__ */ j(!1), d = /* @__PURE__ */ j(null), f = 0, p = W(() => EP({
 		assetCandidates: l.value,
 		careers: r.value,
 		selectedBaseActor: o.value,
 		selectedPortraitPath: s.value
-	})), m = W(() => gP({
+	})), m = W(() => SP({
 		careers: r.value,
 		selectedBaseActor: o.value
-	})), h = W(() => _P(m.value, i.value)), g = W(() => p.value.slice(0, 4)), _ = W(() => Math.max(0, p.value.length - g.value.length)), v = W(() => p.value.find((e) => e.img === a.value) ?? null), y = W(() => v.value?.key ?? ""), b = W(() => CP(d.value)), x = W(() => SP(d.value));
+	})), h = W(() => CP(m.value, i.value)), g = W(() => p.value.slice(0, 4)), _ = W(() => Math.max(0, p.value.length - g.value.length)), v = W(() => p.value.find((e) => e.img === a.value) ?? null), y = W(() => v.value?.key ?? ""), b = W(() => kP(d.value)), x = W(() => OP(d.value));
 	Jn(m, (e) => {
 		n.retainAvailablePortraitSearchTerms(e);
 	}, { immediate: !0 }), Jn(() => [
@@ -16475,7 +16500,7 @@ function OP(e, t) {
 	}
 	async function w() {
 		let n = f + 1;
-		if (f = n, !xP({
+		if (f = n, !DP({
 			careers: r.value,
 			searchTerms: h.value,
 			selectedBaseActor: o.value,
@@ -16501,7 +16526,7 @@ function OP(e, t) {
 			});
 			f === n && (l.value = t);
 		} catch (e) {
-			f === n && (t.value = kP(e));
+			f === n && (t.value = FP(e));
 		} finally {
 			f === n && (u.value = !1);
 		}
@@ -16523,13 +16548,13 @@ function OP(e, t) {
 		togglePortraitSearchTerm: C
 	};
 }
-function kP(e) {
+function FP(e) {
 	return e instanceof Error ? e.message : "The NPC Builder could not finish searching for portraits.";
 }
 //#endregion
 //#region src/view/apps/npc-builder/components/NpcBuilderBuildTab/usePortraitCandidates.ts
-function AP(e, t) {
-	let n = OP(e, t), r = /* @__PURE__ */ j(!1);
+function IP(e, t) {
+	let n = PP(e, t), r = /* @__PURE__ */ j(!1);
 	function i(e) {
 		n.selectPortrait(e);
 	}
@@ -16541,7 +16566,7 @@ function AP(e, t) {
 }
 //#endregion
 //#region src/view/apps/npc-builder/components/NpcBuilderBuildTab.vue?vue&type=script&setup=true&lang.ts
-var jP = { class: "app:grid app:gap-3" }, MP = { class: "app:flex app:flex-wrap app:items-start app:gap-3" }, NP = { class: "app:flex app:min-w-72 app:flex-[2_1_34rem] app:flex-col app:gap-3" }, PP = /* @__PURE__ */ P({
+var LP = { class: "app:grid app:gap-3" }, RP = { class: "app:flex app:flex-wrap app:items-start app:gap-3" }, zP = { class: "app:flex app:min-w-72 app:flex-[2_1_34rem] app:flex-col app:gap-3" }, BP = /* @__PURE__ */ P({
 	__name: "NpcBuilderBuildTab",
 	props: {
 		bridge: {},
@@ -16550,8 +16575,8 @@ var jP = { class: "app:grid app:gap-3" }, MP = { class: "app:flex app:flex-wrap 
 	},
 	emits: ["careerDrop"],
 	setup(e, { emit: t }) {
-		let n = e, r = t, { actorName: i, advancements: a, careers: o, estimatedNpcXp: s, finalActorName: c, finalCareer: l, finalPortraitPath: u, grantTotals: d, selectedBaseActor: f, selectedSpells: p, suggestedActorName: m, traits: h } = oc(LA()), g = /* @__PURE__ */ j(""), { actorFilter: _, filteredActors: v, handleActorDrop: y, selectedBaseActorSelectValue: b } = lP(n.bridge, g), { clearCareerDragState: x, draggedCareerIndex: S, dragOverCareerIndex: C, handleCareerDragOver: ee, handleCareerDragStart: w, handleCareerDrop: te, moveCareer: T, removeCareer: ne, setCareerQuantity: re, setDragOverCareerIndex: E } = pP(), { displayedQuickTraitOptions: ie, optionalTraitOptions: ae, toggleOptionalTrait: oe, toggleQuickTrait: se } = dP(), { buildPreviewStatus: D, buildPreviewWarnings: ce, careerItemCount: le, editedAdvanceCount: ue, fallbackTrappingCount: de, ignoredTrappingCount: fe, visibleTrappingCount: pe } = uP(), { activePortraitSearchTerms: me, compactPortraitCandidates: he, enableAllPortraitSearchTerms: ge, hiddenPortraitCandidateCount: _e, isLoadingPortraitCandidates: O, isPortraitGalleryOpen: ve, portraitCandidates: ye, portraitSearchProgress: be, portraitSearchProgressLabel: xe, portraitSearchProgressValue: Se, portraitSearchTerms: Ce, selectedPortraitCandidate: we, selectedPortraitCandidateKey: k, selectPortrait: Te, selectPortraitFromGallery: Ee, togglePortraitSearchTerm: De } = AP(n.bridge, g);
-		return (t, n) => (L(), R("section", jP, [B("div", MP, [B("div", NP, [V(_M, {
+		let n = e, r = t, { actorName: i, advancements: a, careers: o, estimatedNpcXp: s, finalActorName: c, finalCareer: l, finalPortraitPath: u, grantTotals: d, selectedBaseActor: f, selectedSpells: p, suggestedActorName: m, traits: h } = oc(LA()), g = /* @__PURE__ */ j(""), { actorFilter: _, filteredActors: v, handleActorDrop: y, selectedBaseActorSelectValue: b } = hP(n.bridge, g), { clearCareerDragState: x, draggedCareerIndex: S, dragOverCareerIndex: C, handleCareerDragOver: ee, handleCareerDragStart: w, handleCareerDrop: te, moveCareer: T, removeCareer: ne, setCareerQuantity: re, setDragOverCareerIndex: E } = yP(), { displayedQuickTraitOptions: ie, optionalTraitOptions: ae, toggleOptionalTrait: oe, toggleQuickTrait: se } = _P(), { buildPreviewStatus: D, buildPreviewWarnings: ce, careerItemCount: le, editedAdvanceCount: ue, fallbackTrappingCount: de, ignoredTrappingCount: fe, visibleTrappingCount: pe } = gP(), { activePortraitSearchTerms: me, compactPortraitCandidates: he, enableAllPortraitSearchTerms: ge, hiddenPortraitCandidateCount: _e, isLoadingPortraitCandidates: O, isPortraitGalleryOpen: ve, portraitCandidates: ye, portraitSearchProgress: be, portraitSearchProgressLabel: xe, portraitSearchProgressValue: Se, portraitSearchTerms: Ce, selectedPortraitCandidate: we, selectedPortraitCandidateKey: k, selectPortrait: Te, selectPortraitFromGallery: Ee, togglePortraitSearchTerm: De } = IP(n.bridge, g);
+		return (t, n) => (L(), R("section", LP, [B("div", RP, [B("div", zP, [V(vM, {
 			"actor-filter": M(_),
 			"error-message": g.value,
 			"filtered-actors": M(v),
@@ -16571,7 +16596,7 @@ var jP = { class: "app:grid app:gap-3" }, MP = { class: "app:flex app:flex-wrap 
 			"selected-base-actor",
 			"selected-base-actor-uuid",
 			"onActorDrop"
-		]), V(HN, {
+		]), V(JN, {
 			careers: M(o),
 			"drag-over-career-index": M(C),
 			"dragged-career-index": M(S),
@@ -16596,7 +16621,7 @@ var jP = { class: "app:grid app:gap-3" }, MP = { class: "app:flex app:flex-wrap 
 			"onCareerQuantityInput",
 			"onMoveCareer",
 			"onRemoveCareer"
-		])]), V(CN, {
+		])]), V(wN, {
 			class: "app:min-w-72 app:flex-[1_1_21rem]",
 			"actor-name": M(i),
 			"advancement-count": M(a).length,
@@ -16632,7 +16657,7 @@ var jP = { class: "app:grid app:gap-3" }, MP = { class: "app:flex app:flex-wrap 
 			onSelectPortrait: M(Te),
 			onToggleOptionalTrait: M(oe),
 			onToggleQuickTrait: M(se)
-		}, null, 8, /* @__PURE__ */ "actor-name.advancement-count.build-preview-status.build-preview-warnings.career-item-count.compact-portrait-candidates.edited-advance-count.estimated-npc-xp.fallback-trapping-count.final-actor-name.final-career.final-portrait-path.grant-totals.hidden-portrait-candidate-count.ignored-trapping-count.is-loading-portrait-candidates.optional-trait-options.portrait-candidates.portrait-search-progress.portrait-search-progress-label.portrait-search-progress-value.quick-trait-options.selected-base-actor.selected-portrait-candidate.selected-portrait-candidate-key.selected-spell-count.suggested-actor-name.trait-count.visible-trapping-count.onSelectPortrait.onToggleOptionalTrait.onToggleQuickTrait".split("."))]), V(sP, {
+		}, null, 8, /* @__PURE__ */ "actor-name.advancement-count.build-preview-status.build-preview-warnings.career-item-count.compact-portrait-candidates.edited-advance-count.estimated-npc-xp.fallback-trapping-count.final-actor-name.final-career.final-portrait-path.grant-totals.hidden-portrait-candidate-count.ignored-trapping-count.is-loading-portrait-candidates.optional-trait-options.portrait-candidates.portrait-search-progress.portrait-search-progress-label.portrait-search-progress-value.quick-trait-options.selected-base-actor.selected-portrait-candidate.selected-portrait-candidate-key.selected-spell-count.suggested-actor-name.trait-count.visible-trapping-count.onSelectPortrait.onToggleOptionalTrait.onToggleQuickTrait".split("."))]), V(pP, {
 			"active-portrait-search-terms": M(me),
 			"is-loading-portrait-candidates": M(O),
 			open: M(ve),
@@ -16662,12 +16687,12 @@ var jP = { class: "app:grid app:gap-3" }, MP = { class: "app:flex app:flex-wrap 
 });
 //#endregion
 //#region src/functions/npc-builder/settings/portrait-search-status.ts
-function FP(e) {
+function VP(e) {
 	return e ? e.digDownActive ? e.digDownDeepFileSearchEnabled ? e.digDownCacheReady ? `Dig Down cache ready with ${e.digDownIndexedFileCount} indexed files.` : "Dig Down is active; its file cache is still building or unavailable." : "Dig Down is active, but its Deep File Search setting is disabled." : "Install and enable Dig Down to search local files for portrait suggestions." : "Checking Dig Down integration.";
 }
 //#endregion
 //#region src/functions/npc-builder/settings/settings-payload.ts
-function IP(e) {
+function HP(e) {
 	let { canUseDigDownPortraitSearch: t, settings: n } = e;
 	return {
 		allowBaseActorCharacteristics: n.allowBaseActorCharacteristics,
@@ -16689,8 +16714,8 @@ function IP(e) {
 }
 //#endregion
 //#region src/state/npc-builder/workflows/settings-workflow.ts
-function LP(e) {
-	let t = LA(), { actorFolders: n, itemFolders: r, settings: i } = oc(t), a = /* @__PURE__ */ j(""), o = /* @__PURE__ */ j(""), s = /* @__PURE__ */ j(!1), c = /* @__PURE__ */ j(""), l = /* @__PURE__ */ j(null), u = /* @__PURE__ */ j(""), d = /* @__PURE__ */ j(""), f = W(() => l.value?.digDownActive ?? !0), p = W(() => FP(l.value));
+function UP(e) {
+	let t = LA(), { actorFolders: n, itemFolders: r, settings: i } = oc(t), a = /* @__PURE__ */ j(""), o = /* @__PURE__ */ j(""), s = /* @__PURE__ */ j(!1), c = /* @__PURE__ */ j(""), l = /* @__PURE__ */ j(null), u = /* @__PURE__ */ j(""), d = /* @__PURE__ */ j(""), f = W(() => l.value?.digDownActive ?? !0), p = W(() => VP(l.value));
 	Jn(l, (e) => {
 		e && !e.digDownActive && (i.value.searchFoundryPortraitAssets = !1);
 	});
@@ -16759,7 +16784,7 @@ function LP(e) {
 		try {
 			await e();
 		} catch (e) {
-			o.value = RP(e);
+			o.value = WP(e);
 		} finally {
 			s.value = !1;
 		}
@@ -16769,7 +16794,7 @@ function LP(e) {
 		t.hydrateBaseActors(n), t.hydrateQuickTraits(r);
 	}
 	function te() {
-		return IP({
+		return HP({
 			canUseDigDownPortraitSearch: f.value,
 			settings: i.value
 		});
@@ -16795,12 +16820,12 @@ function LP(e) {
 		settingsMessage: d
 	};
 }
-function RP(e) {
+function WP(e) {
 	return e instanceof Error ? e.message : "The NPC Builder could not finish that action.";
 }
 //#endregion
 //#region src/view/apps/npc-builder/components/NpcBuilderSettingsTab/FolderSetting.vue?vue&type=script&setup=true&lang.ts
-var zP = { class: "dui-fieldset" }, BP = { class: "dui-fieldset-legend" }, VP = ["aria-label", "value"], HP = { value: "" }, UP = ["value"], WP = { class: "dui-fieldset" }, GP = ["aria-label", "value"], KP = { class: "dui-card-actions" }, qP = ["disabled"], JP = /* @__PURE__ */ P({
+var GP = { class: "dui-fieldset" }, KP = { class: "dui-fieldset-legend" }, qP = ["aria-label", "value"], JP = { value: "" }, YP = ["value"], XP = { class: "dui-fieldset" }, ZP = ["aria-label", "value"], QP = { class: "dui-card-actions" }, $P = ["disabled"], eF = /* @__PURE__ */ P({
 	__name: "FolderSetting",
 	props: {
 		buttonLabel: {},
@@ -16827,32 +16852,32 @@ var zP = { class: "dui-fieldset" }, BP = { class: "dui-fieldset-legend" }, VP = 
 			n("createNameChange", t?.value ?? "");
 		}
 		return (t, a) => (L(), R("section", null, [
-			B("fieldset", zP, [B("legend", BP, k(e.folderLabel), 1), B("select", {
+			B("fieldset", GP, [B("legend", KP, k(e.folderLabel), 1), B("select", {
 				"aria-label": e.folderLabel,
 				class: "dui-select dui-select-sm",
 				value: e.selectedUuid,
 				onChange: r
-			}, [B("option", HP, k(e.defaultOptionLabel), 1), (L(!0), R(I, null, F(e.folders, (e) => (L(), R("option", {
+			}, [B("option", JP, k(e.defaultOptionLabel), 1), (L(!0), R(I, null, F(e.folders, (e) => (L(), R("option", {
 				key: e.uuid,
 				value: e.uuid
-			}, k(e.name), 9, UP))), 128))], 40, VP)]),
-			B("fieldset", WP, [a[1] ||= B("legend", { class: "dui-fieldset-legend" }, "Create or use by name", -1), B("input", {
+			}, k(e.name), 9, YP))), 128))], 40, qP)]),
+			B("fieldset", XP, [a[1] ||= B("legend", { class: "dui-fieldset-legend" }, "Create or use by name", -1), B("input", {
 				"aria-label": `Create or use ${e.folderLabel} by name`,
 				class: "dui-input dui-input-sm",
 				value: e.createName,
 				placeholder: "Folder name",
 				type: "text",
 				onInput: i
-			}, null, 40, GP)]),
-			B("div", KP, [B("button", {
+			}, null, 40, ZP)]),
+			B("div", QP, [B("button", {
 				class: "dui-btn dui-btn-sm",
 				disabled: e.disabled || !e.createName.trim(),
 				type: "button",
 				onClick: a[0] ||= (e) => n("saveFolderName")
-			}, k(e.buttonLabel ?? "Save Folder"), 9, qP)])
+			}, k(e.buttonLabel ?? "Save Folder"), 9, $P)])
 		]));
 	}
-}), YP = /* @__PURE__ */ P({
+}), tF = /* @__PURE__ */ P({
 	__name: "ActorSourceSettings",
 	props: {
 		actorFolders: {},
@@ -16877,7 +16902,7 @@ var zP = { class: "dui-fieldset" }, BP = { class: "dui-fieldset-legend" }, VP = 
 			number: "1",
 			title: "Actor Sources"
 		}, {
-			default: N(() => [V(JP, {
+			default: N(() => [V(eF, {
 				"create-name": e.baseActorFolderName,
 				disabled: e.isBusy,
 				folders: e.actorFolders,
@@ -16892,7 +16917,7 @@ var zP = { class: "dui-fieldset" }, BP = { class: "dui-fieldset-legend" }, VP = 
 				"disabled",
 				"folders",
 				"selected-uuid"
-			]), V(JP, {
+			]), V(eF, {
 				"create-name": e.outputActorFolderName,
 				disabled: e.isBusy,
 				folders: e.actorFolders,
@@ -16911,7 +16936,7 @@ var zP = { class: "dui-fieldset" }, BP = { class: "dui-fieldset-legend" }, VP = 
 			_: 1
 		}));
 	}
-}), XP = { class: "dui-label" }, ZP = ["checked"], QP = { class: "dui-label" }, $P = ["checked"], eF = { class: "dui-label" }, tF = ["checked"], nF = { class: "dui-label" }, rF = ["checked"], iF = { class: "dui-label" }, aF = ["checked"], oF = /* @__PURE__ */ P({
+}), nF = { class: "dui-label" }, rF = ["checked"], iF = { class: "dui-label" }, aF = ["checked"], oF = { class: "dui-label" }, sF = ["checked"], cF = { class: "dui-label" }, lF = ["checked"], uF = { class: "dui-label" }, dF = ["checked"], fF = /* @__PURE__ */ P({
 	__name: "BaseActorFeatureSettings",
 	props: {
 		allowCharacteristics: { type: Boolean },
@@ -16938,41 +16963,41 @@ var zP = { class: "dui-fieldset" }, BP = { class: "dui-fieldset-legend" }, VP = 
 			title: "Base Actor Features"
 		}, {
 			default: N(() => [
-				B("label", XP, [B("input", {
+				B("label", nF, [B("input", {
 					class: "dui-toggle dui-toggle-sm",
 					checked: e.allowCharacteristics,
 					type: "checkbox",
 					onChange: i[0] ||= (e) => n("allowCharacteristicsChange", r(e))
-				}, null, 40, ZP), i[5] ||= B("span", null, "Show base actor characteristics", -1)]),
-				B("label", QP, [B("input", {
+				}, null, 40, rF), i[5] ||= B("span", null, "Show base actor characteristics", -1)]),
+				B("label", iF, [B("input", {
 					class: "dui-toggle dui-toggle-sm",
 					checked: e.allowSkills,
 					type: "checkbox",
 					onChange: i[1] ||= (e) => n("allowSkillsChange", r(e))
-				}, null, 40, $P), i[6] ||= B("span", null, "Show base actor skills", -1)]),
-				B("label", eF, [B("input", {
+				}, null, 40, aF), i[6] ||= B("span", null, "Show base actor skills", -1)]),
+				B("label", oF, [B("input", {
 					class: "dui-toggle dui-toggle-sm",
 					checked: e.allowTalents,
 					type: "checkbox",
 					onChange: i[2] ||= (e) => n("allowTalentsChange", r(e))
-				}, null, 40, tF), i[7] ||= B("span", null, "Show base actor talents", -1)]),
-				B("label", nF, [B("input", {
+				}, null, 40, sF), i[7] ||= B("span", null, "Show base actor talents", -1)]),
+				B("label", cF, [B("input", {
 					class: "dui-toggle dui-toggle-sm",
 					checked: e.allowTrappings,
 					type: "checkbox",
 					onChange: i[3] ||= (e) => n("allowTrappingsChange", r(e))
-				}, null, 40, rF), i[8] ||= B("span", null, "Show base actor trappings", -1)]),
-				B("label", iF, [B("input", {
+				}, null, 40, lF), i[8] ||= B("span", null, "Show base actor trappings", -1)]),
+				B("label", uF, [B("input", {
 					class: "dui-toggle dui-toggle-sm",
 					checked: e.allowTraits,
 					type: "checkbox",
 					onChange: i[4] ||= (e) => n("allowTraitsChange", r(e))
-				}, null, 40, aF), i[9] ||= B("span", null, "Show base actor traits", -1)])
+				}, null, 40, dF), i[9] ||= B("span", null, "Show base actor traits", -1)])
 			]),
 			_: 1
 		}));
 	}
-}), sF = { class: "dui-label" }, cF = ["checked"], lF = /* @__PURE__ */ P({
+}), pF = { class: "dui-label" }, mF = ["checked"], hF = /* @__PURE__ */ P({
 	__name: "MagicSpellSettings",
 	props: { autoSelectGrantedSpells: { type: Boolean } },
 	emits: ["autoSelectGrantedSpellsChange"],
@@ -16986,16 +17011,16 @@ var zP = { class: "dui-fieldset" }, BP = { class: "dui-fieldset-legend" }, VP = 
 			number: "6",
 			title: "Magic and Spells"
 		}, {
-			default: N(() => [B("label", sF, [B("input", {
+			default: N(() => [B("label", pF, [B("input", {
 				class: "dui-toggle dui-toggle-sm",
 				checked: e.autoSelectGrantedSpells,
 				type: "checkbox",
 				onChange: r
-			}, null, 40, cF), n[0] ||= B("span", null, "Select detected Lore spells by default", -1)])]),
+			}, null, 40, mF), n[0] ||= B("span", null, "Select detected Lore spells by default", -1)])]),
 			_: 1
 		}));
 	}
-}), uF = { class: "dui-label" }, dF = ["checked"], fF = /* @__PURE__ */ P({
+}), gF = { class: "dui-label" }, _F = ["checked"], vF = /* @__PURE__ */ P({
 	__name: "NamingSettings",
 	props: { includeSpeciesInName: { type: Boolean } },
 	emits: ["includeSpeciesInNameChange"],
@@ -17009,16 +17034,16 @@ var zP = { class: "dui-fieldset" }, BP = { class: "dui-fieldset-legend" }, VP = 
 			number: "3",
 			title: "Default Naming"
 		}, {
-			default: N(() => [B("label", uF, [B("input", {
+			default: N(() => [B("label", gF, [B("input", {
 				class: "dui-toggle dui-toggle-sm",
 				checked: e.includeSpeciesInName,
 				type: "checkbox",
 				onChange: r
-			}, null, 40, dF), n[0] ||= B("span", null, "Include species in suggested names", -1)])]),
+			}, null, 40, _F), n[0] ||= B("span", null, "Include species in suggested names", -1)])]),
 			_: 1
 		}));
 	}
-}), pF = { class: "dui-fieldset" }, mF = ["value"], hF = { class: "dui-label" }, gF = ["checked"], _F = { class: "dui-card-actions" }, vF = ["disabled"], yF = ["disabled"], bF = /* @__PURE__ */ P({
+}), yF = { class: "dui-fieldset" }, bF = ["value"], xF = { class: "dui-label" }, SF = ["checked"], CF = { class: "dui-card-actions" }, wF = ["disabled"], TF = ["disabled"], EF = /* @__PURE__ */ P({
 	__name: "OtherSettingsPanel",
 	props: {
 		askForLinkedSkillSpecializations: { type: Boolean },
@@ -17046,7 +17071,7 @@ var zP = { class: "dui-fieldset" }, BP = { class: "dui-fieldset-legend" }, VP = 
 			title: "Career Choices and Saving"
 		}, {
 			default: N(() => [
-				B("fieldset", pF, [a[3] ||= B("legend", { class: "dui-fieldset-legend" }, "Lower career handling", -1), B("select", {
+				B("fieldset", yF, [a[3] ||= B("legend", { class: "dui-fieldset-legend" }, "Lower career handling", -1), B("select", {
 					"aria-label": "Lower career handling",
 					class: "dui-select dui-select-sm",
 					value: e.lowerCareerMode,
@@ -17055,33 +17080,33 @@ var zP = { class: "dui-fieldset" }, BP = { class: "dui-fieldset-legend" }, VP = 
 					B("option", { value: "prompt" }, "Prompt when candidates are found", -1),
 					B("option", { value: "auto-add-all" }, "Automatically add all lower-tier matches", -1),
 					B("option", { value: "never" }, "Only add dropped careers", -1)
-				]], 40, mF)]),
-				B("label", hF, [B("input", {
+				]], 40, bF)]),
+				B("label", xF, [B("input", {
 					class: "dui-toggle dui-toggle-sm",
 					checked: e.askForLinkedSkillSpecializations,
 					type: "checkbox",
 					onChange: i
-				}, null, 40, gF), a[4] ||= B("span", null, "Resolve linked career skill repeats separately", -1)]),
-				B("div", _F, [B("button", {
+				}, null, 40, SF), a[4] ||= B("span", null, "Resolve linked career skill repeats separately", -1)]),
+				B("div", CF, [B("button", {
 					class: "dui-btn dui-btn-primary dui-btn-sm",
 					disabled: e.isBusy,
 					type: "button",
 					onClick: a[0] ||= (e) => n("saveSettings")
-				}, " Save Settings ", 8, vF), B("button", {
+				}, " Save Settings ", 8, wF), B("button", {
 					class: "dui-btn dui-btn-sm",
 					disabled: e.isBusy,
 					type: "button",
 					onClick: a[1] ||= (e) => n("resetSettings")
-				}, " Reset to Defaults ", 8, yF)])
+				}, " Reset to Defaults ", 8, TF)])
 			]),
 			_: 1
 		}));
 	}
-}), xF = { class: "dui-label" }, SF = ["checked", "disabled"], CF = {
+}), DF = { class: "dui-label" }, OF = ["checked", "disabled"], kF = {
 	"aria-live": "polite",
 	class: "dui-alert",
 	role: "status"
-}, wF = { class: "dui-label" }, TF = ["checked"], EF = { class: "dui-label" }, DF = ["checked"], OF = /* @__PURE__ */ P({
+}, AF = { class: "dui-label" }, jF = ["checked"], MF = { class: "dui-label" }, NF = ["checked"], PF = /* @__PURE__ */ P({
 	__name: "PortraitSuggestionSettings",
 	props: {
 		canUseDigDownPortraitSearch: { type: Boolean },
@@ -17107,31 +17132,31 @@ var zP = { class: "dui-fieldset" }, BP = { class: "dui-fieldset-legend" }, VP = 
 			title: "Portrait Suggestions"
 		}, {
 			default: N(() => [
-				B("label", xF, [B("input", {
+				B("label", DF, [B("input", {
 					class: "dui-toggle dui-toggle-sm",
 					checked: e.searchFoundryPortraitAssets,
 					disabled: !e.canUseDigDownPortraitSearch,
 					type: "checkbox",
 					onChange: r
-				}, null, 40, SF), n[0] ||= B("span", null, "Search Dig Down's file cache for portrait suggestions", -1)]),
-				B("p", CF, k(e.statusLabel), 1),
-				B("label", wF, [B("input", {
+				}, null, 40, OF), n[0] ||= B("span", null, "Search Dig Down's file cache for portrait suggestions", -1)]),
+				B("p", kF, k(e.statusLabel), 1),
+				B("label", AF, [B("input", {
 					class: "dui-toggle dui-toggle-sm",
 					checked: e.searchCompendiumPortraitAssets,
 					type: "checkbox",
 					onChange: i
-				}, null, 40, TF), n[1] ||= B("span", null, "Search Actor and Item compendiums for portrait suggestions", -1)]),
-				B("label", EF, [B("input", {
+				}, null, 40, jF), n[1] ||= B("span", null, "Search Actor and Item compendiums for portrait suggestions", -1)]),
+				B("label", MF, [B("input", {
 					class: "dui-toggle dui-toggle-sm",
 					checked: e.searchWebPortraitAssets,
 					disabled: "",
 					type: "checkbox"
-				}, null, 8, DF), n[2] ||= B("span", null, "Search the web for portrait suggestions (later)", -1)])
+				}, null, 8, NF), n[2] ||= B("span", null, "Search the web for portrait suggestions (later)", -1)])
 			]),
 			_: 1
 		}));
 	}
-}), kF = { class: "dui-card-actions" }, AF = ["disabled"], jF = /* @__PURE__ */ P({
+}), FF = { class: "dui-card-actions" }, IF = ["disabled"], LF = /* @__PURE__ */ P({
 	__name: "QuickTraitSettings",
 	props: {
 		isBusy: { type: Boolean },
@@ -17152,7 +17177,7 @@ var zP = { class: "dui-fieldset" }, BP = { class: "dui-fieldset-legend" }, VP = 
 			number: "2",
 			title: "Quick Traits"
 		}, {
-			default: N(() => [V(JP, {
+			default: N(() => [V(eF, {
 				"create-name": e.quickTraitFolderName,
 				disabled: e.isBusy,
 				folders: e.itemFolders,
@@ -17167,45 +17192,45 @@ var zP = { class: "dui-fieldset" }, BP = { class: "dui-fieldset-legend" }, VP = 
 				"disabled",
 				"folders",
 				"selected-uuid"
-			]), B("div", kF, [B("button", {
+			]), B("div", FF, [B("button", {
 				class: "dui-btn dui-btn-sm",
 				disabled: e.isBusy || !e.quickTraitFolderUuid,
 				type: "button",
 				onClick: r[3] ||= (e) => n("importRecommendedQuickTraits")
-			}, " Import Recommended Quick Traits ", 8, AF)])]),
+			}, " Import Recommended Quick Traits ", 8, IF)])]),
 			_: 1
 		}));
 	}
-}), MF = {
+}), RF = {
 	key: 0,
 	class: "dui-alert dui-alert-error",
 	role: "alert"
-}, NF = {
+}, zF = {
 	key: 1,
 	"aria-live": "polite",
 	class: "dui-alert dui-alert-info",
 	role: "status"
-}, PF = /* @__PURE__ */ P({
+}, BF = /* @__PURE__ */ P({
 	__name: "SettingsMessages",
 	props: {
 		errorMessage: {},
 		settingsMessage: {}
 	},
 	setup(e) {
-		return (t, n) => e.errorMessage ? (L(), R("p", MF, k(e.errorMessage), 1)) : e.settingsMessage ? (L(), R("p", NF, k(e.settingsMessage), 1)) : U("", !0);
+		return (t, n) => e.errorMessage ? (L(), R("p", RF, k(e.errorMessage), 1)) : e.settingsMessage ? (L(), R("p", zF, k(e.settingsMessage), 1)) : U("", !0);
 	}
-}), FF = { class: "app:grid app:gap-3" }, IF = { class: "app:grid app:grid-cols-[repeat(auto-fit,minmax(18rem,1fr))] app:gap-3" }, LF = /* @__PURE__ */ P({
+}), VF = { class: "app:grid app:gap-3" }, HF = { class: "app:grid app:grid-cols-[repeat(auto-fit,minmax(18rem,1fr))] app:gap-3" }, UF = /* @__PURE__ */ P({
 	__name: "NpcBuilderSettingsTab",
 	props: { bridge: {} },
 	setup(e) {
-		let { actorFolders: t, baseActorFolderName: n, canUseDigDownPortraitSearch: r, errorMessage: i, importRecommendedQuickTraits: a, isBusy: o, itemFolders: s, outputActorFolderName: c, portraitSearchStatusLabel: l, quickTraitFolderName: u, refreshPortraitSearchAvailability: d, resetSettingsToDefaults: f, saveBaseActorFolderName: p, saveOutputActorFolderName: m, saveQuickTraitFolderName: h, saveSettings: g, settings: _, settingsMessage: v } = LP(e.bridge);
+		let { actorFolders: t, baseActorFolderName: n, canUseDigDownPortraitSearch: r, errorMessage: i, importRecommendedQuickTraits: a, isBusy: o, itemFolders: s, outputActorFolderName: c, portraitSearchStatusLabel: l, quickTraitFolderName: u, refreshPortraitSearchAvailability: d, resetSettingsToDefaults: f, saveBaseActorFolderName: p, saveOutputActorFolderName: m, saveQuickTraitFolderName: h, saveSettings: g, settings: _, settingsMessage: v } = UP(e.bridge);
 		return kr(() => {
 			d();
-		}), (e, d) => (L(), R("section", FF, [V(PF, {
+		}), (e, d) => (L(), R("section", VF, [V(BF, {
 			"error-message": M(i),
 			"settings-message": M(v)
-		}, null, 8, ["error-message", "settings-message"]), B("div", IF, [
-			V(YP, {
+		}, null, 8, ["error-message", "settings-message"]), B("div", HF, [
+			V(tF, {
 				class: "app:col-span-full",
 				"actor-folders": M(t),
 				"base-actor-folder-name": M(n),
@@ -17229,7 +17254,7 @@ var zP = { class: "dui-fieldset" }, BP = { class: "dui-fieldset-legend" }, VP = 
 				"onSaveBaseActorFolderName",
 				"onSaveOutputActorFolderName"
 			]),
-			V(jF, {
+			V(LF, {
 				"is-busy": M(o),
 				"item-folders": M(s),
 				"quick-trait-folder-name": M(u),
@@ -17246,11 +17271,11 @@ var zP = { class: "dui-fieldset" }, BP = { class: "dui-fieldset-legend" }, VP = 
 				"onImportRecommendedQuickTraits",
 				"onSaveQuickTraitFolderName"
 			]),
-			V(fF, {
+			V(vF, {
 				"include-species-in-name": M(_).includeSpeciesInName,
 				onIncludeSpeciesInNameChange: d[6] ||= (e) => M(_).includeSpeciesInName = e
 			}, null, 8, ["include-species-in-name"]),
-			V(OF, {
+			V(PF, {
 				"can-use-dig-down-portrait-search": M(r),
 				"search-compendium-portrait-assets": M(_).searchCompendiumPortraitAssets,
 				"search-foundry-portrait-assets": M(_).searchFoundryPortraitAssets,
@@ -17265,7 +17290,7 @@ var zP = { class: "dui-fieldset" }, BP = { class: "dui-fieldset-legend" }, VP = 
 				"search-web-portrait-assets",
 				"status-label"
 			]),
-			V(oF, {
+			V(fF, {
 				"allow-characteristics": M(_).allowBaseActorCharacteristics,
 				"allow-skills": M(_).allowBaseActorSkills,
 				"allow-talents": M(_).allowBaseActorTalents,
@@ -17283,11 +17308,11 @@ var zP = { class: "dui-fieldset" }, BP = { class: "dui-fieldset-legend" }, VP = 
 				"allow-traits",
 				"allow-trappings"
 			]),
-			V(lF, {
+			V(hF, {
 				"auto-select-granted-spells": M(_).autoSelectGrantedSpells,
 				onAutoSelectGrantedSpellsChange: d[14] ||= (e) => M(_).autoSelectGrantedSpells = e
 			}, null, 8, ["auto-select-granted-spells"]),
-			V(bF, {
+			V(EF, {
 				class: "app:col-span-full",
 				"ask-for-linked-skill-specializations": M(_).askForLinkedSkillSpecializations,
 				"is-busy": M(o),
@@ -17308,36 +17333,36 @@ var zP = { class: "dui-fieldset" }, BP = { class: "dui-fieldset-legend" }, VP = 
 });
 //#endregion
 //#region src/functions/npc-builder/magic-lore-resolution.ts
-function RF(e) {
+function WF(e) {
 	return e.map((e) => `${e.kind}:${e.sourceName}:${e.rawLore}`).sort().join("|");
 }
-function zF(e) {
+function GF(e) {
 	return e.filter((e) => e.isAmbiguous);
 }
-function BF(e, t) {
-	return { rows: zF(e).map((e) => ({
-		grantLabel: HF(e),
+function KF(e, t) {
+	return { rows: GF(e).map((e) => ({
+		grantLabel: JF(e),
 		options: qk(e, t),
 		rawLore: e.rawLore,
 		resolutionKey: e.resolutionKey,
 		selectedLore: "",
-		sourceLabel: UF(e)
+		sourceLabel: YF(e)
 	})) };
 }
-function VF(e) {
+function qF(e) {
 	return e.kind === "arcane-magic" ? "Arcane Magic" : e.kind === "petty-magic" ? "Petty Magic" : "Spellcaster";
 }
-function HF(e) {
-	return `${VF(e)} from ${e.sourceName}`;
+function JF(e) {
+	return `${qF(e)} from ${e.sourceName}`;
 }
-function UF(e) {
+function YF(e) {
 	return e.source === "talent" ? "Talent" : "Trait";
 }
 //#endregion
 //#region src/state/npc-builder/workflows/spells-workflow.ts
-function WF(e) {
-	let t = LA(), { magicGrants: n, spells: r, selectedSpells: i } = oc(t), a = /* @__PURE__ */ j(""), o = /* @__PURE__ */ j(!1), s = /* @__PURE__ */ j(!1), c = /* @__PURE__ */ j([]), l = /* @__PURE__ */ j(null), u = 0, d = W(() => zF(n.value)), f = W(() => n.value.length - d.value.length);
-	Jn(() => RF(n.value), () => {
+function XF(e) {
+	let t = LA(), { magicGrants: n, spells: r, selectedSpells: i } = oc(t), a = /* @__PURE__ */ j(""), o = /* @__PURE__ */ j(!1), s = /* @__PURE__ */ j(!1), c = /* @__PURE__ */ j([]), l = /* @__PURE__ */ j(null), u = 0, d = W(() => GF(n.value)), f = W(() => n.value.length - d.value.length);
+	Jn(() => WF(n.value), () => {
 		m();
 	});
 	function p() {
@@ -17354,7 +17379,7 @@ function WF(e) {
 			let i = await e.listSpellsForMagicGrants(n.value);
 			u === r && t.hydrateDetectedSpells(i);
 		} catch (e) {
-			u === r && (a.value = GF(e));
+			u === r && (a.value = ZF(e));
 		} finally {
 			u === r && (s.value = !1);
 		}
@@ -17365,14 +17390,14 @@ function WF(e) {
 			try {
 				c.value = await e.listMagicLoreOptions();
 			} catch (e) {
-				a.value = GF(e);
+				a.value = ZF(e);
 			} finally {
 				o.value = !1;
 			}
 		}
 	}
 	async function g() {
-		a.value = "", await h(), l.value = BF(n.value, c.value);
+		a.value = "", await h(), l.value = KF(n.value, c.value);
 	}
 	function _() {
 		let e = l.value;
@@ -17389,7 +17414,7 @@ function WF(e) {
 		try {
 			t.addCustomSpell(await e.resolveSpellDrop(n));
 		} catch (e) {
-			a.value = GF(e);
+			a.value = ZF(e);
 		}
 	}
 	function b(e) {
@@ -17418,12 +17443,12 @@ function WF(e) {
 		spells: r
 	};
 }
-function GF(e) {
+function ZF(e) {
 	return e instanceof Error ? e.message : "The NPC Builder could not finish that spell action.";
 }
 //#endregion
 //#region src/view/apps/npc-builder/components/MagicLoreResolutionPromptContent.vue?vue&type=script&setup=true&lang.ts
-var KF = { class: "dui-card-body" }, qF = { class: "dui-card-title" }, JF = { class: "dui-fieldset" }, YF = ["onUpdate:modelValue", "aria-label"], XF = ["value"], ZF = { class: "dui-card-actions" }, QF = /* @__PURE__ */ P({
+var QF = { class: "dui-card-body" }, $F = { class: "dui-card-title" }, eI = { class: "dui-fieldset" }, tI = ["onUpdate:modelValue", "aria-label"], nI = ["value"], rI = { class: "dui-card-actions" }, iI = /* @__PURE__ */ P({
 	__name: "MagicLoreResolutionPromptContent",
 	props: { prompt: {} },
 	emits: ["applyLores", "keepUnresolved"],
@@ -17434,19 +17459,19 @@ var KF = { class: "dui-card-body" }, qF = { class: "dui-card-title" }, JF = { cl
 			(L(!0), R(I, null, F(e.prompt.rows, (e) => (L(), R("section", {
 				key: e.resolutionKey,
 				class: "dui-card dui-card-border dui-card-sm"
-			}, [B("div", KF, [
-				B("h3", qF, k(e.grantLabel), 1),
+			}, [B("div", QF, [
+				B("h3", $F, k(e.grantLabel), 1),
 				B("span", null, k(e.sourceLabel) + " - " + k(e.rawLore || "Any Lore"), 1),
-				B("fieldset", JF, [r[3] ||= B("legend", { class: "dui-fieldset-legend" }, "Lore", -1), Vn(B("select", {
+				B("fieldset", eI, [r[3] ||= B("legend", { class: "dui-fieldset-legend" }, "Lore", -1), Vn(B("select", {
 					"onUpdate:modelValue": (t) => e.selectedLore = t,
 					"aria-label": `Lore for ${e.grantLabel}`,
 					class: "dui-select dui-select-sm"
 				}, [r[2] ||= B("option", { value: "" }, "Leave unresolved", -1), (L(!0), R(I, null, F(e.options, (e) => (L(), R("option", {
 					key: e.key,
 					value: e.value
-				}, k(e.label) + k(e.wind && e.wind !== "None" ? ` (${e.wind})` : ""), 9, XF))), 128))], 8, YF), [[Wo, e.selectedLore]])])
+				}, k(e.label) + k(e.wind && e.wind !== "None" ? ` (${e.wind})` : ""), 9, nI))), 128))], 8, tI), [[Wo, e.selectedLore]])])
 			])]))), 128)),
-			B("div", ZF, [B("button", {
+			B("div", rI, [B("button", {
 				class: "dui-btn dui-btn-sm",
 				type: "button",
 				onClick: r[0] ||= (e) => n("keepUnresolved")
@@ -17457,16 +17482,16 @@ var KF = { class: "dui-card-body" }, qF = { class: "dui-card-title" }, JF = { cl
 			}, " Apply Lores ")])
 		]));
 	}
-}), $F = {
+}), aI = {
 	key: 0,
 	class: "dui-alert"
-}, eI = {
+}, oI = {
 	key: 1,
 	class: "dui-list"
-}, tI = { class: "dui-list-col-grow" }, nI = { key: 0 }, rI = { key: 1 }, iI = {
+}, sI = { class: "dui-list-col-grow" }, cI = { key: 0 }, lI = { key: 1 }, uI = {
 	key: 2,
 	class: "dui-card-actions"
-}, aI = ["disabled"], oI = /* @__PURE__ */ P({
+}, dI = ["disabled"], fI = /* @__PURE__ */ P({
 	__name: "MagicAccessPanel",
 	props: {
 		ambiguousGrantCount: {},
@@ -17481,52 +17506,52 @@ var KF = { class: "dui-card-body" }, qF = { class: "dui-card-title" }, JF = { cl
 			number: "1",
 			title: "Magic Access"
 		}, {
-			default: N(() => [e.magicGrants.length ? (L(), R("ul", eI, [(L(!0), R(I, null, F(e.magicGrants, (e) => (L(), R("li", {
+			default: N(() => [e.magicGrants.length ? (L(), R("ul", oI, [(L(!0), R(I, null, F(e.magicGrants, (e) => (L(), R("li", {
 				key: `${e.source}:${e.sourceName}:${e.rawLore}`,
 				class: "dui-list-row"
-			}, [B("div", tI, [
-				B("strong", null, k(M(VF)(e)), 1),
-				B("span", null, k(M(UF)(e)) + " - " + k(e.sourceName), 1),
-				e.isAmbiguous ? (L(), R("small", nI, " Needs Lore resolution before automatic spells can be found. ")) : (L(), R("small", rI, " Lore: " + k(e.rawLore || e.normalizedLore), 1))
-			])]))), 128))])) : (L(), R("p", $F, " No magic-enabling Talent or Trait is selected. ")), e.ambiguousGrantCount ? (L(), R("div", iI, [B("button", {
+			}, [B("div", sI, [
+				B("strong", null, k(M(qF)(e)), 1),
+				B("span", null, k(M(YF)(e)) + " - " + k(e.sourceName), 1),
+				e.isAmbiguous ? (L(), R("small", cI, " Needs Lore resolution before automatic spells can be found. ")) : (L(), R("small", lI, " Lore: " + k(e.rawLore || e.normalizedLore), 1))
+			])]))), 128))])) : (L(), R("p", aI, " No magic-enabling Talent or Trait is selected. ")), e.ambiguousGrantCount ? (L(), R("div", uI, [B("button", {
 				class: "dui-btn dui-btn-sm",
 				disabled: e.isLoadingLoreOptions,
 				type: "button",
 				onClick: r[0] ||= (e) => n("resolveLores")
-			}, k(e.isLoadingLoreOptions ? "Loading Lores..." : "Resolve Lores"), 9, aI)])) : U("", !0)]),
+			}, k(e.isLoadingLoreOptions ? "Loading Lores..." : "Resolve Lores"), 9, dI)])) : U("", !0)]),
 			_: 1
 		}));
 	}
 });
 //#endregion
 //#region src/view/apps/npc-builder/components/NpcBuilderSpellsTab/labels.ts
-function sI(e) {
+function pI(e) {
 	return e.source === "custom" ? "Dropped" : e.sourceLabel;
 }
 //#endregion
 //#region src/view/apps/npc-builder/components/NpcBuilderSpellsTab/SpellSelectionPanel.vue?vue&type=script&setup=true&lang.ts
-var cI = { class: "dui-card-actions" }, lI = ["disabled"], uI = {
+var mI = { class: "dui-card-actions" }, hI = ["disabled"], gI = {
 	key: 0,
 	class: "dui-alert dui-alert-error",
 	role: "alert"
-}, dI = {
+}, _I = {
 	key: 1,
 	class: "dui-alert dui-alert-error",
 	role: "alert"
-}, fI = {
+}, vI = {
 	key: 2,
 	class: "dui-list"
-}, pI = [
+}, yI = [
 	"aria-label",
 	"checked",
 	"onChange"
-], mI = { class: "dui-list-col-grow" }, hI = {
+], bI = { class: "dui-list-col-grow" }, xI = {
 	key: 0,
 	class: "dui-avatar"
-}, gI = ["src"], _I = ["onClick"], vI = {
+}, SI = ["src"], CI = ["onClick"], wI = {
 	key: 3,
 	class: "dui-alert"
-}, yI = /* @__PURE__ */ P({
+}, TI = /* @__PURE__ */ P({
 	__name: "SpellSelectionPanel",
 	props: {
 		ambiguousGrantCount: {},
@@ -17555,15 +17580,15 @@ var cI = { class: "dui-card-actions" }, lI = ["disabled"], uI = {
 					title: "Drop Spell Items",
 					onDropData: r[0] ||= (e) => n("spellDrop", e)
 				}),
-				B("div", cI, [B("button", {
+				B("div", mI, [B("button", {
 					class: "dui-btn dui-btn-sm",
 					disabled: e.isLoadingSpells || !e.resolvedGrantCount,
 					type: "button",
 					onClick: r[1] ||= (e) => n("refreshSpells")
-				}, k(e.isLoadingSpells ? "Finding spells..." : "Refresh Spells"), 9, lI), B("span", null, k(e.selectedSpellCount) + " selected / " + k(e.spells.length) + " found", 1)]),
-				e.errorMessage ? (L(), R("p", uI, k(e.errorMessage), 1)) : U("", !0),
-				e.ambiguousGrantCount ? (L(), R("p", dI, k(e.ambiguousGrantCount) + " magic grant" + k(e.ambiguousGrantCount === 1 ? "" : "s") + " still need Lore resolution. You can still drop specific spells for now. ", 1)) : U("", !0),
-				e.spells.length ? (L(), R("ul", fI, [(L(!0), R(I, null, F(e.spells, (e) => (L(), R("li", {
+				}, k(e.isLoadingSpells ? "Finding spells..." : "Refresh Spells"), 9, hI), B("span", null, k(e.selectedSpellCount) + " selected / " + k(e.spells.length) + " found", 1)]),
+				e.errorMessage ? (L(), R("p", gI, k(e.errorMessage), 1)) : U("", !0),
+				e.ambiguousGrantCount ? (L(), R("p", _I, k(e.ambiguousGrantCount) + " magic grant" + k(e.ambiguousGrantCount === 1 ? "" : "s") + " still need Lore resolution. You can still drop specific spells for now. ", 1)) : U("", !0),
+				e.spells.length ? (L(), R("ul", vI, [(L(!0), R(I, null, F(e.spells, (e) => (L(), R("li", {
 					key: e.key,
 					class: "dui-list-row"
 				}, [
@@ -17573,31 +17598,31 @@ var cI = { class: "dui-card-actions" }, lI = ["disabled"], uI = {
 						checked: e.selected,
 						type: "checkbox",
 						onChange: (t) => n("spellSelectedChange", e, t)
-					}, null, 40, pI),
-					B("div", mI, [
-						e.img ? (L(), R("div", hI, [B("div", null, [B("img", {
+					}, null, 40, yI),
+					B("div", bI, [
+						e.img ? (L(), R("div", xI, [B("div", null, [B("img", {
 							src: e.img,
 							alt: ""
-						}, null, 8, gI)])])) : U("", !0),
+						}, null, 8, SI)])])) : U("", !0),
 						B("strong", null, k(e.name), 1),
-						B("span", null, k(e.loreName || "Unknown Lore") + " · " + k(M(sI)(e)), 1)
+						B("span", null, k(e.loreName || "Unknown Lore") + " · " + k(M(pI)(e)), 1)
 					]),
 					e.source === "custom" ? (L(), R("button", {
 						key: 0,
 						class: "dui-btn dui-btn-sm",
 						type: "button",
 						onClick: (t) => n("removeCustomSpell", e.key)
-					}, " Remove ", 8, _I)) : U("", !0)
-				]))), 128))])) : (L(), R("p", vI, " No matching spells found yet. Drop specific spells here, or resolve a non-ambiguous magic Lore. "))
+					}, " Remove ", 8, CI)) : U("", !0)
+				]))), 128))])) : (L(), R("p", wI, " No matching spells found yet. Drop specific spells here, or resolve a non-ambiguous magic Lore. "))
 			]),
 			_: 1
 		}));
 	}
-}), bI = /* @__PURE__ */ P({
+}), EI = /* @__PURE__ */ P({
 	__name: "NpcBuilderSpellsTab",
 	props: { bridge: {} },
 	setup(e) {
-		let { ambiguousGrants: t, confirmMagicLorePrompt: n, dismissMagicLorePrompt: r, errorMessage: i, handleSpellDrop: a, initialize: o, isLoadingLoreOptions: s, isLoadingSpells: c, loadDetectedSpells: l, magicGrants: u, openMagicLorePrompt: d, pendingMagicLorePrompt: f, removeCustomSpell: p, resolvedGrantCount: m, selectedSpells: h, setSpellSelected: g, spells: _ } = WF(e.bridge);
+		let { ambiguousGrants: t, confirmMagicLorePrompt: n, dismissMagicLorePrompt: r, errorMessage: i, handleSpellDrop: a, initialize: o, isLoadingLoreOptions: s, isLoadingSpells: c, loadDetectedSpells: l, magicGrants: u, openMagicLorePrompt: d, pendingMagicLorePrompt: f, removeCustomSpell: p, resolvedGrantCount: m, selectedSpells: h, setSpellSelected: g, spells: _ } = XF(e.bridge);
 		kr(() => {
 			o();
 		});
@@ -17611,7 +17636,7 @@ var cI = { class: "dui-card-actions" }, lI = ["disabled"], uI = {
 				title: "Resolve Magic Lores",
 				onClose: M(r)
 			}, {
-				default: N(() => [M(f) ? (L(), z(QF, {
+				default: N(() => [M(f) ? (L(), z(iI, {
 					key: 0,
 					prompt: M(f),
 					onApplyLores: M(n),
@@ -17623,7 +17648,7 @@ var cI = { class: "dui-card-actions" }, lI = ["disabled"], uI = {
 				])) : U("", !0)]),
 				_: 1
 			}, 8, ["open", "onClose"]),
-			V(oI, {
+			V(fI, {
 				"ambiguous-grant-count": M(t).length,
 				"is-loading-lore-options": M(s),
 				"magic-grants": M(u),
@@ -17635,7 +17660,7 @@ var cI = { class: "dui-card-actions" }, lI = ["disabled"], uI = {
 				"onResolveLores"
 			]),
 			o[0] ||= B("div", { class: "dui-divider" }, null, -1),
-			V(yI, {
+			V(TI, {
 				"ambiguous-grant-count": M(t).length,
 				"error-message": M(i),
 				"is-loading-spells": M(c),
@@ -17659,38 +17684,38 @@ var cI = { class: "dui-card-actions" }, lI = ["disabled"], uI = {
 			])
 		]));
 	}
-}), xI = {
+}), DI = {
 	key: 0,
 	class: "dui-alert dui-alert-error",
 	role: "alert"
-}, SI = { class: "dui-collapse-title" }, CI = { class: "dui-badge" }, wI = {
+}, OI = { class: "dui-collapse-title" }, kI = { class: "dui-badge" }, AI = {
 	key: 0,
 	class: "dui-badge dui-badge-info"
-}, TI = {
+}, jI = {
 	key: 1,
 	class: "dui-badge dui-badge-warning"
-}, EI = { class: "dui-collapse-content" }, DI = { class: "dui-fieldset" }, OI = { class: "dui-fieldset-legend" }, kI = [
+}, MI = { class: "dui-collapse-content" }, NI = { class: "dui-fieldset" }, PI = { class: "dui-fieldset-legend" }, FI = [
 	"aria-label",
 	"value",
 	"onInput"
-], AI = {
+], II = {
 	key: 0,
 	class: "dui-fieldset"
-}, jI = [
+}, LI = [
 	"aria-label",
 	"value",
 	"onChange"
-], MI = ["value"], NI = {
+], RI = ["value"], zI = {
 	key: 1,
 	class: "dui-fieldset"
-}, PI = [
+}, BI = [
 	"aria-label",
 	"value",
 	"onInput"
-], FI = ["onClick"], II = {
+], VI = ["onClick"], HI = {
 	key: 1,
 	class: "dui-alert"
-}, LI = /* @__PURE__ */ P({
+}, UI = /* @__PURE__ */ P({
 	__name: "NpcBuilderTraitsTab",
 	props: {
 		bridge: {},
@@ -17733,25 +17758,25 @@ var cI = { class: "dui-card-actions" }, lI = ["disabled"], uI = {
 					title: "Drop Trait Items",
 					onDropData: c
 				}),
-				i.value ? (L(), R("p", xI, k(i.value), 1)) : U("", !0),
+				i.value ? (L(), R("p", DI, k(i.value), 1)) : U("", !0),
 				(L(!0), R(I, null, F(M(r), (t) => (L(), R("details", {
 					key: t.key,
 					class: "dui-collapse dui-collapse-arrow dui-card-border"
-				}, [B("summary", SI, [
+				}, [B("summary", OI, [
 					B("strong", null, k(t.name), 1),
-					B("span", CI, k(a(t)), 1),
-					t.config.rollable ? (L(), R("span", wI, "Rollable")) : U("", !0),
-					t.config.damage ? (L(), R("span", TI, "Damage")) : U("", !0)
-				]), B("div", EI, [
-					B("fieldset", DI, [B("legend", OI, k(t.config.damage ? "Damage" : "Specification"), 1), B("input", {
+					B("span", kI, k(a(t)), 1),
+					t.config.rollable ? (L(), R("span", AI, "Rollable")) : U("", !0),
+					t.config.damage ? (L(), R("span", jI, "Damage")) : U("", !0)
+				]), B("div", MI, [
+					B("fieldset", NI, [B("legend", PI, k(t.config.damage ? "Damage" : "Specification"), 1), B("input", {
 						"aria-label": `${t.config.damage ? "Damage" : "Specification"} for ${t.name}`,
 						class: "dui-input dui-input-sm",
 						value: t.config.specification,
 						placeholder: "None",
 						type: "text",
 						onInput: (e) => s(t, "specification", e)
-					}, null, 40, kI)]),
-					t.config.rollable && !t.config.damage ? (L(), R("fieldset", AI, [n[0] ||= B("legend", { class: "dui-fieldset-legend" }, "Difficulty", -1), B("select", {
+					}, null, 40, FI)]),
+					t.config.rollable && !t.config.damage ? (L(), R("fieldset", II, [n[0] ||= B("legend", { class: "dui-fieldset-legend" }, "Difficulty", -1), B("select", {
 						"aria-label": `Difficulty for ${t.name}`,
 						class: "dui-select dui-select-sm",
 						value: t.config.defaultDifficulty,
@@ -17759,81 +17784,81 @@ var cI = { class: "dui-card-actions" }, lI = ["disabled"], uI = {
 					}, [(L(!0), R(I, null, F(e.difficultyOptions, (e) => (L(), R("option", {
 						key: e.value,
 						value: e.value
-					}, k(e.label), 9, MI))), 128))], 40, jI)])) : U("", !0),
-					t.config.damage && t.config.dice ? (L(), R("fieldset", NI, [n[1] ||= B("legend", { class: "dui-fieldset-legend" }, "Dice", -1), B("input", {
+					}, k(e.label), 9, RI))), 128))], 40, LI)])) : U("", !0),
+					t.config.damage && t.config.dice ? (L(), R("fieldset", zI, [n[1] ||= B("legend", { class: "dui-fieldset-legend" }, "Dice", -1), B("input", {
 						"aria-label": `Dice for ${t.name}`,
 						class: "dui-input dui-input-sm",
 						value: t.config.dice,
 						placeholder: "Optional",
 						type: "text",
 						onInput: (e) => s(t, "dice", e)
-					}, null, 40, PI)])) : U("", !0),
+					}, null, 40, BI)])) : U("", !0),
 					B("button", {
 						class: "dui-btn dui-btn-sm",
 						type: "button",
 						onClick: (e) => o(t)
-					}, "Remove", 8, FI)
+					}, "Remove", 8, VI)
 				])]))), 128)),
-				M(r).length ? U("", !0) : (L(), R("p", II, "No traits are selected yet."))
+				M(r).length ? U("", !0) : (L(), R("p", HI, "No traits are selected yet."))
 			]),
 			_: 1
 		}));
 	}
-}), RI = "__blank-item__";
+}), WI = "__blank-item__";
 //#endregion
 //#region src/view/apps/npc-builder/components/NpcBuilderTrappingsTab/resolution-labels.ts
-function zI(e) {
+function GI(e) {
 	return e.source === "base" ? "Base" : e.source === "career" ? "Career" : "Custom";
 }
-function BI(e) {
+function KI(e) {
 	return e.resolution.status === "matched" ? `Matched ${e.resolution.selectedName}` : e.resolution.status === "fallback" ? `Blank ${e.resolution.selectedName || e.name}` : e.resolution.candidates.length ? "Choose a match" : "Needs resolution";
 }
-function VI(e) {
+function qI(e) {
 	return e.ignored ? "Ignored" : e.resolution.status === "matched" ? "Matched" : e.resolution.status === "fallback" ? "Blank item" : e.resolution.status === "ambiguous" || e.resolution.candidates.length ? "Choose" : "Needs resolution";
 }
-function HI(e) {
+function JI(e) {
 	let t = "dui-badge";
 	return e.ignored ? [t, "dui-badge-ghost"] : e.resolution.status === "matched" ? [t, "dui-badge-success"] : e.resolution.status === "fallback" ? [t, "dui-badge-info"] : e.resolution.status === "ambiguous" || e.resolution.candidates.length ? [t, "dui-badge-warning"] : [t, "dui-badge-error"];
 }
-function UI(e) {
-	return e.resolution.status === "fallback" ? RI : e.resolution.selectedCandidateUuid;
+function YI(e) {
+	return e.resolution.status === "fallback" ? WI : e.resolution.selectedCandidateUuid;
 }
-function WI(e) {
+function XI(e) {
 	return e.source === "career";
 }
-function GI(e) {
-	return e.resolution.candidates.length > 0 || WI(e);
+function ZI(e) {
+	return e.resolution.candidates.length > 0 || XI(e);
 }
-function KI(e) {
+function QI(e) {
 	return e.resolution.searchTerms.length <= 1 ? "" : `Options: ${e.resolution.searchTerms.join(" / ")}`;
 }
 //#endregion
 //#region src/view/apps/npc-builder/components/NpcBuilderTrappingsTab/TrappingsTable.vue?vue&type=script&setup=true&lang.ts
-var qI = {
+var $I = {
 	key: 0,
 	class: "dui-list"
-}, JI = [
+}, eL = [
 	"aria-label",
 	"checked",
 	"onChange"
-], YI = { class: "dui-list-col-grow" }, XI = { key: 0 }, ZI = {
+], tL = { class: "dui-list-col-grow" }, nL = { key: 0 }, rL = {
 	key: 1,
 	class: "dui-fieldset"
-}, QI = [
+}, iL = [
 	"aria-label",
 	"value",
 	"onChange"
-], $I = {
+], aL = {
 	key: 0,
 	value: ""
-}, eL = ["value"], tL = ["value"], nL = { key: 2 }, rL = { class: "dui-card-actions" }, iL = { class: "dui-fieldset" }, aL = [
+}, oL = ["value"], sL = ["value"], cL = { key: 2 }, lL = { class: "dui-card-actions" }, uL = { class: "dui-fieldset" }, dL = [
 	"aria-label",
 	"value",
 	"onInput"
-], oL = ["onClick"], sL = {
+], fL = ["onClick"], pL = {
 	key: 1,
 	class: "dui-alert"
-}, cL = /* @__PURE__ */ P({
+}, mL = /* @__PURE__ */ P({
 	__name: "TrappingsTable",
 	props: { trappings: {} },
 	emits: [
@@ -17844,7 +17869,7 @@ var qI = {
 	],
 	setup(e, { emit: t }) {
 		let n = t;
-		return (t, r) => e.trappings.length ? (L(), R("ul", qI, [(L(!0), R(I, null, F(e.trappings, (e) => (L(), R("li", {
+		return (t, r) => e.trappings.length ? (L(), R("ul", $I, [(L(!0), R(I, null, F(e.trappings, (e) => (L(), R("li", {
 			key: e.key,
 			class: "dui-list-row"
 		}, [B("input", {
@@ -17853,47 +17878,47 @@ var qI = {
 			checked: !e.ignored,
 			type: "checkbox",
 			onChange: (t) => n("useChange", e.key, t)
-		}, null, 40, JI), B("div", YI, [
+		}, null, 40, eL), B("div", tL, [
 			B("strong", null, k(e.name), 1),
-			B("span", null, k(e.resolution.selectedItemType || e.itemType || "trapping") + " · " + k(M(zI)(e)), 1),
-			M(KI)(e) ? (L(), R("span", XI, k(M(KI)(e)), 1)) : U("", !0),
-			B("span", { class: O(M(HI)(e)) }, k(M(VI)(e)), 3),
-			M(GI)(e) ? (L(), R("fieldset", ZI, [r[0] ||= B("legend", { class: "dui-fieldset-legend" }, "Resolution", -1), B("select", {
+			B("span", null, k(e.resolution.selectedItemType || e.itemType || "trapping") + " · " + k(M(GI)(e)), 1),
+			M(QI)(e) ? (L(), R("span", nL, k(M(QI)(e)), 1)) : U("", !0),
+			B("span", { class: O(M(JI)(e)) }, k(M(qI)(e)), 3),
+			M(ZI)(e) ? (L(), R("fieldset", rL, [r[0] ||= B("legend", { class: "dui-fieldset-legend" }, "Resolution", -1), B("select", {
 				"aria-label": `Resolution for ${e.name}`,
 				class: "dui-select dui-select-sm",
-				value: M(UI)(e),
+				value: M(YI)(e),
 				onChange: (t) => n("resolutionChange", e.key, t)
 			}, [
-				e.resolution.candidates.length ? (L(), R("option", $I, "Choose match")) : U("", !0),
+				e.resolution.candidates.length ? (L(), R("option", aL, "Choose match")) : U("", !0),
 				(L(!0), R(I, null, F(e.resolution.candidates, (e) => (L(), R("option", {
 					key: e.uuid,
 					value: e.uuid
-				}, k(e.name) + " (" + k(e.sourceLabel) + ") ", 9, eL))), 128)),
-				M(WI)(e) ? (L(), R("option", {
+				}, k(e.name) + " (" + k(e.sourceLabel) + ") ", 9, oL))), 128)),
+				M(XI)(e) ? (L(), R("option", {
 					key: 1,
-					value: M(RI)
-				}, " Blank Item ", 8, tL)) : U("", !0)
-			], 40, QI)])) : (L(), R("span", nL, k(M(BI)(e)), 1)),
-			B("div", rL, [B("fieldset", iL, [r[1] ||= B("legend", { class: "dui-fieldset-legend" }, "Quantity", -1), B("input", {
+					value: M(WI)
+				}, " Blank Item ", 8, sL)) : U("", !0)
+			], 40, iL)])) : (L(), R("span", cL, k(M(KI)(e)), 1)),
+			B("div", lL, [B("fieldset", uL, [r[1] ||= B("legend", { class: "dui-fieldset-legend" }, "Quantity", -1), B("input", {
 				"aria-label": `Quantity for ${e.name}`,
 				class: "dui-input dui-input-sm",
 				value: e.quantity,
 				min: "1",
 				type: "number",
 				onInput: (t) => n("quantityInput", e.key, t)
-			}, null, 40, aL)]), e.source === "custom" ? (L(), R("button", {
+			}, null, 40, dL)]), e.source === "custom" ? (L(), R("button", {
 				key: 0,
 				class: "dui-btn dui-btn-sm",
 				type: "button",
 				onClick: (t) => n("removeCustomTrapping", e.key)
-			}, " Remove ", 8, oL)) : U("", !0)])
-		])]))), 128))])) : (L(), R("p", sL, "No trappings are selected yet."));
+			}, " Remove ", 8, fL)) : U("", !0)])
+		])]))), 128))])) : (L(), R("p", pL, "No trappings are selected yet."));
 	}
-}), lL = { class: "dui-card-actions" }, uL = ["disabled"], dL = { key: 0 }, fL = {
+}), hL = { class: "dui-card-actions" }, gL = ["disabled"], _L = { key: 0 }, vL = {
 	key: 0,
 	class: "dui-alert dui-alert-error",
 	role: "alert"
-}, pL = /* @__PURE__ */ P({
+}, yL = /* @__PURE__ */ P({
 	__name: "NpcBuilderTrappingsTab",
 	props: { bridge: {} },
 	setup(e) {
@@ -17952,14 +17977,14 @@ var qI = {
 					title: "Drop Trapping Items",
 					onDropData: d
 				}),
-				B("div", lL, [B("button", {
+				B("div", hL, [B("button", {
 					class: "dui-btn dui-btn-sm",
 					disabled: a.value || !o.value.length,
 					type: "button",
 					onClick: u
-				}, k(a.value ? "Resolving..." : "Resolve Trappings"), 9, uL), o.value.length ? (L(), R("span", dL, k(o.value.length) + " unresolved ", 1)) : U("", !0)]),
-				i.value ? (L(), R("p", fL, k(i.value), 1)) : U("", !0),
-				V(cL, {
+				}, k(a.value ? "Resolving..." : "Resolve Trappings"), 9, gL), o.value.length ? (L(), R("span", _L, k(o.value.length) + " unresolved ", 1)) : U("", !0)]),
+				i.value ? (L(), R("p", vL, k(i.value), 1)) : U("", !0),
+				V(mL, {
 					trappings: M(r),
 					onQuantityInput: s,
 					onRemoveCustomTrapping: M(n).removeCustomTrapping,
@@ -17970,17 +17995,94 @@ var qI = {
 			_: 1
 		}));
 	}
-}), mL = { class: "dui-card-body" }, hL = { class: "dui-card-title" }, gL = { class: "dui-badge" }, _L = { class: "dui-fieldset" }, vL = ["onUpdate:modelValue", "aria-label"], yL = ["value"], bL = [
+});
+//#endregion
+//#region src/functions/npc-builder/career-workflow/skill-resolution.ts
+function bL(e, t) {
+	let n = /* @__PURE__ */ new Map(), r = [], i = [];
+	for (let a of e) {
+		let e = /* @__PURE__ */ new Map();
+		for (let o of MO(a.career.uuid, a.career.grants.skills)) {
+			let s = jO(o.originalName);
+			if (!s) continue;
+			let c = NO(o.originalName), l = n.get(c) ?? [], u = e.get(c) ?? 0, d = t.enableLinkedSkillResolution && l[u] ? l[u] : "";
+			if (e.set(c, u + 1), d) {
+				r.push({
+					linkedFromKey: d,
+					resolutionKey: o.resolutionKey
+				});
+				continue;
+			}
+			i.push({
+				alreadyGrantedSpecializations: TL(a.career.grants.skills, s.baseName),
+				baseName: s.baseName,
+				careerLabel: EL(a.career),
+				isLoadingSuggestions: !1,
+				occurrence: o.occurrence,
+				options: s.options,
+				originalName: s.originalName,
+				resolvedSpecialization: DL(s),
+				resolutionKey: o.resolutionKey,
+				specialization: s.specialization,
+				suggestedSpecializations: []
+			}), l[u] = o.resolutionKey, n.set(c, l);
+		}
+	}
+	return {
+		entries: e,
+		linkedRows: r,
+		message: t.message,
+		rows: i
+	};
+}
+function xL(e) {
+	return e.resolvedSpecialization.trim() ? kO(e.baseName, e.resolvedSpecialization) : "";
+}
+function SL(e) {
+	return e.occurrence > 0 ? `${e.originalName}, choice ${e.occurrence + 1}` : e.originalName;
+}
+function CL(e) {
+	return e.options.length <= 1 && e.specialization.trim().toLocaleLowerCase() === "any";
+}
+function wL(e, t) {
+	let n = NO(t);
+	return e.alreadyGrantedSpecializations.some((e) => NO(e) === n);
+}
+function TL(e, t) {
+	let n = NO(t), r = /* @__PURE__ */ new Set(), i = [];
+	for (let t of e) {
+		let e = AO(t);
+		if (!e || NO(e.baseName) !== n) continue;
+		let a = NO(e.specialization);
+		r.has(a) || (r.add(a), i.push(e.specialization));
+	}
+	return i;
+}
+function EL(e) {
+	return e.level === null ? e.name : `${e.name}, tier ${e.level}`;
+}
+function DL(e) {
+	return e.specialization.trim().toLocaleLowerCase() === "any" ? "" : e.options[0] ?? "";
+}
+//#endregion
+//#region src/view/apps/npc-builder/components/SkillResolutionPromptContent.vue?vue&type=script&setup=true&lang.ts
+var OL = { class: "dui-card-body" }, kL = { class: "dui-card-title" }, AL = { class: "dui-badge" }, jL = { class: "dui-fieldset" }, ML = { class: "app:grid app:gap-1" }, NL = ["onUpdate:modelValue", "aria-label"], PL = ["value"], FL = [
 	"onUpdate:modelValue",
 	"aria-label",
 	"placeholder"
-], xL = {
+], IL = {
+	key: 0,
+	class: "dui-label app:text-error"
+}, LL = {
 	key: 0,
 	class: "dui-card-actions"
-}, SL = { key: 0 }, CL = ["onClick"], wL = {
+}, RL = { key: 0 }, zL = ["onClick"], BL = {
+	key: 0,
+	class: "dui-badge dui-badge-error dui-badge-xs"
+}, VL = {
 	key: 0,
 	class: "dui-alert dui-alert-info"
-}, TL = { class: "dui-card-actions" }, EL = /* @__PURE__ */ P({
+}, HL = { class: "dui-card-actions" }, UL = /* @__PURE__ */ P({
 	__name: "SkillResolutionPromptContent",
 	props: {
 		getSkillResolutionLabel: { type: Function },
@@ -17994,58 +18096,66 @@ var qI = {
 	],
 	setup(e, { emit: t }) {
 		let n = t;
-		return (t, r) => (L(), R("section", null, [
-			r[4] ||= B("p", null, " Some Career skills need a specialization before they become concrete WFRP skills. Blank rows can be left unresolved and edited later. ", -1),
+		function r(e) {
+			return !!e.resolvedSpecialization && wL(e, e.resolvedSpecialization);
+		}
+		return (t, i) => (L(), R("section", null, [
+			i[5] ||= B("p", null, " Some Career skills need a specialization before they become concrete WFRP skills. Blank rows can be left unresolved and edited later. ", -1),
 			(L(!0), R(I, null, F(e.prompt.rows, (t) => (L(), R("section", {
 				key: t.resolutionKey,
 				class: "dui-card dui-card-border dui-card-sm"
-			}, [B("div", mL, [
-				B("h3", hL, k(e.getSkillResolutionLabel(t)), 1),
-				B("span", gL, k(t.careerLabel), 1),
-				B("fieldset", _L, [r[3] ||= B("legend", { class: "dui-fieldset-legend" }, "Specialization", -1), t.options.length > 1 ? Vn((L(), R("select", {
-					key: 0,
-					"onUpdate:modelValue": (e) => t.resolvedSpecialization = e,
-					"aria-label": `Specialization for ${e.getSkillResolutionLabel(t)}`,
-					class: "dui-select dui-select-sm"
-				}, [r[2] ||= B("option", { value: "" }, "Leave unresolved", -1), (L(!0), R(I, null, F(t.options, (e) => (L(), R("option", {
-					key: e,
-					value: e
-				}, k(e), 9, yL))), 128))], 8, vL)), [[Wo, t.resolvedSpecialization]]) : Vn((L(), R("input", {
-					key: 1,
-					"onUpdate:modelValue": (e) => t.resolvedSpecialization = e,
-					"aria-label": `Specialization for ${e.getSkillResolutionLabel(t)}`,
-					class: "dui-input dui-input-sm",
-					placeholder: t.suggestedSpecializations.length ? "Type or choose below" : t.specialization,
-					type: "text"
-				}, null, 8, bL)), [[Uo, t.resolvedSpecialization]])]),
-				e.usesFreeformSkillSpecialization(t) ? (L(), R("div", xL, [t.isLoadingSuggestions ? (L(), R("small", SL, "Finding known choices.")) : U("", !0), (L(!0), R(I, null, F(t.suggestedSpecializations, (e) => (L(), R("button", {
+			}, [B("div", OL, [
+				B("h3", kL, k(e.getSkillResolutionLabel(t)), 1),
+				B("span", AL, k(t.careerLabel), 1),
+				B("fieldset", jL, [
+					i[4] ||= B("legend", { class: "dui-fieldset-legend" }, "Specialization", -1),
+					B("label", ML, [i[3] ||= B("span", { class: "dui-label" }, "Choice", -1), t.options.length > 1 ? Vn((L(), R("select", {
+						key: 0,
+						"onUpdate:modelValue": (e) => t.resolvedSpecialization = e,
+						"aria-label": `Specialization for ${e.getSkillResolutionLabel(t)}`,
+						class: O(["dui-select dui-select-sm", { "dui-select-error": M(wL)(t, t.resolvedSpecialization) }])
+					}, [i[2] ||= B("option", { value: "" }, "Leave unresolved", -1), (L(!0), R(I, null, F(t.options, (e) => (L(), R("option", {
+						key: e,
+						class: O({ "app:text-error": M(wL)(t, e) }),
+						value: e
+					}, k(e) + k(M(wL)(t, e) ? " — already granted" : ""), 11, PL))), 128))], 10, NL)), [[Wo, t.resolvedSpecialization]]) : Vn((L(), R("input", {
+						key: 1,
+						"onUpdate:modelValue": (e) => t.resolvedSpecialization = e,
+						"aria-label": `Specialization for ${e.getSkillResolutionLabel(t)}`,
+						class: O(["dui-input dui-input-sm", { "dui-input-error": M(wL)(t, t.resolvedSpecialization) }]),
+						placeholder: t.suggestedSpecializations.length ? "Type or choose below" : t.specialization,
+						type: "text"
+					}, null, 10, FL)), [[Uo, t.resolvedSpecialization]])]),
+					r(t) ? (L(), R("p", IL, " Already granted by this Career. ")) : U("", !0)
+				]),
+				e.usesFreeformSkillSpecialization(t) ? (L(), R("div", LL, [t.isLoadingSuggestions ? (L(), R("small", RL, "Finding known choices.")) : U("", !0), (L(!0), R(I, null, F(t.suggestedSpecializations, (e) => (L(), R("button", {
 					key: `${t.resolutionKey}:${e}`,
-					class: "dui-btn dui-btn-sm",
+					class: O(["dui-btn dui-btn-sm", { "dui-btn-error dui-btn-outline": M(wL)(t, e) }]),
 					type: "button",
 					onClick: (r) => n("chooseSkillSpecialization", t, e)
-				}, k(e), 9, CL))), 128))])) : U("", !0)
+				}, [H(k(e) + " ", 1), M(wL)(t, e) ? (L(), R("span", BL, " Already granted ")) : U("", !0)], 10, zL))), 128))])) : U("", !0)
 			])]))), 128)),
-			e.prompt.linkedRows.length ? (L(), R("div", wL, k(e.prompt.linkedRows.length) + " linked skill specialization" + k(e.prompt.linkedRows.length === 1 ? "" : "s") + " will reuse earlier choices from this career chain. ", 1)) : U("", !0),
-			B("div", TL, [B("button", {
+			e.prompt.linkedRows.length ? (L(), R("div", VL, k(e.prompt.linkedRows.length) + " linked skill specialization" + k(e.prompt.linkedRows.length === 1 ? "" : "s") + " will reuse earlier choices from this career chain. ", 1)) : U("", !0),
+			B("div", HL, [B("button", {
 				class: "dui-btn dui-btn-sm",
 				type: "button",
-				onClick: r[0] ||= (e) => n("addWithoutResolving")
+				onClick: i[0] ||= (e) => n("addWithoutResolving")
 			}, " Add Without Resolving "), B("button", {
 				class: "dui-btn dui-btn-sm",
 				type: "button",
-				onClick: r[1] ||= (e) => n("applySpecializations")
+				onClick: i[1] ||= (e) => n("applySpecializations")
 			}, " Apply Specializations ")])
 		]));
 	}
 });
 //#endregion
 //#region src/view/apps/npc-builder/NpcBuilderApp/errors.ts
-function DL(e) {
+function WL(e) {
 	return e instanceof Error ? e.message : "The NPC Builder could not finish that action.";
 }
 //#endregion
 //#region src/view/apps/npc-builder/NpcBuilderApp/useNpcBuilderBuild.ts
-function OL(e, t, n, r, i) {
+function GL(e, t, n, r, i) {
 	let a = LA(), { advancements: o, buildTraits: s, careers: c, finalActorName: l, finalPortraitPath: u, selectedBaseActor: d, selectedSpells: f, settings: p, trappings: m } = oc(a), h = /* @__PURE__ */ j(!1), g = W(() => !!(d.value && c.value.length && !h.value && !i.value));
 	async function _() {
 		if (!d.value || !c.value.length) return;
@@ -18064,7 +18174,7 @@ function OL(e, t, n, r, i) {
 		try {
 			n.value = `Created ${(await e.buildNpc(i)).name}.`, a.resetDraft(), t.value = "builder";
 		} catch (e) {
-			r.value = DL(e), n.value = "";
+			r.value = WL(e), n.value = "";
 		} finally {
 			h.value = !1;
 		}
@@ -18077,7 +18187,7 @@ function OL(e, t, n, r, i) {
 }
 //#endregion
 //#region src/functions/npc-builder/career-workflow/lower-careers.ts
-function kL(e) {
+function KL(e) {
 	if (!e) return [];
 	let t = /* @__PURE__ */ new Map();
 	for (let n of e.candidates) {
@@ -18089,13 +18199,13 @@ function kL(e) {
 		level: e
 	}));
 }
-function AL(e) {
+function qL(e) {
 	return [{
 		career: e,
 		mode: "add-or-increment"
 	}];
 }
-function jL(e) {
+function JL(e) {
 	return [...e.candidates.filter((t) => e.selectedUuids.includes(t.uuid)).map((e) => ({
 		career: e,
 		mode: "add-if-missing"
@@ -18104,75 +18214,22 @@ function jL(e) {
 		mode: "add-or-increment"
 	}];
 }
-function ML(e) {
+function YL(e) {
 	let t = e.candidates.filter((t) => e.selectedUuids.includes(t.uuid)).length;
 	return t === 0 ? "" : `Added ${t} lower-tier career candidate${t === 1 ? "" : "s"}.`;
 }
-function NL(e, t) {
+function XL(e, t) {
 	return e?.selectedUuids.includes(t) ?? !1;
 }
-function PL(e) {
+function ZL(e) {
 	let { candidateUuid: t, isAlreadyQueued: n, prompt: r, selected: i } = e;
 	return !r || n ? null : i ? [...new Set([...r.selectedUuids, t])] : r.selectedUuids.filter((e) => e !== t);
 }
 //#endregion
-//#region src/functions/npc-builder/career-workflow/skill-resolution.ts
-function FL(e, t) {
-	let n = /* @__PURE__ */ new Map(), r = [], i = [];
-	for (let a of e) {
-		let e = /* @__PURE__ */ new Map();
-		for (let o of MO(a.career.uuid, a.career.grants.skills)) {
-			let s = jO(o.originalName);
-			if (!s) continue;
-			let c = NO(o.originalName), l = n.get(c) ?? [], u = e.get(c) ?? 0, d = t.enableLinkedSkillResolution && l[u] ? l[u] : "";
-			if (e.set(c, u + 1), d) {
-				r.push({
-					linkedFromKey: d,
-					resolutionKey: o.resolutionKey
-				});
-				continue;
-			}
-			i.push({
-				baseName: s.baseName,
-				careerLabel: zL(a.career),
-				isLoadingSuggestions: !1,
-				occurrence: o.occurrence,
-				options: s.options,
-				originalName: s.originalName,
-				resolvedSpecialization: BL(s),
-				resolutionKey: o.resolutionKey,
-				specialization: s.specialization,
-				suggestedSpecializations: []
-			}), l[u] = o.resolutionKey, n.set(c, l);
-		}
-	}
-	return {
-		entries: e,
-		linkedRows: r,
-		message: t.message,
-		rows: i
-	};
-}
-function IL(e) {
-	return e.resolvedSpecialization.trim() ? kO(e.baseName, e.resolvedSpecialization) : "";
-}
-function LL(e) {
-	return e.occurrence > 0 ? `${e.originalName}, choice ${e.occurrence + 1}` : e.originalName;
-}
-function RL(e) {
-	return e.options.length <= 1 && e.specialization.trim().toLocaleLowerCase() === "any";
-}
-function zL(e) {
-	return e.level === null ? e.name : `${e.name}, tier ${e.level}`;
-}
-function BL(e) {
-	return e.specialization.trim().toLocaleLowerCase() === "any" ? "" : e.options[0] ?? "";
-}
-//#endregion
 //#region src/state/npc-builder/workflows/skill-suggestions.ts
-async function VL(e, t) {
+async function QL(e, t) {
 	await Promise.all(t.rows.map(async (t) => {
-		if (RL(t)) {
+		if (CL(t)) {
 			t.isLoadingSuggestions = !0;
 			try {
 				t.suggestedSpecializations = await e.listSkillSpecializations(t.baseName);
@@ -18186,14 +18243,14 @@ async function VL(e, t) {
 }
 //#endregion
 //#region src/state/npc-builder/workflows/career-drop-workflow.ts
-function HL(e) {
-	let t = LA(), { careers: n, settings: r } = oc(t), i = /* @__PURE__ */ j(""), a = /* @__PURE__ */ j(""), o = /* @__PURE__ */ j(!1), s = /* @__PURE__ */ j(null), c = /* @__PURE__ */ j(null), l = W(() => kL(s.value));
+function $L(e) {
+	let t = LA(), { careers: n, settings: r } = oc(t), i = /* @__PURE__ */ j(""), a = /* @__PURE__ */ j(""), o = /* @__PURE__ */ j(!1), s = /* @__PURE__ */ j(null), c = /* @__PURE__ */ j(null), l = W(() => KL(s.value));
 	async function u(t) {
 		a.value = "";
 		try {
 			await d(await e.resolveCareerDrop(t));
 		} catch (e) {
-			a.value = UL(e);
+			a.value = eR(e);
 		}
 	}
 	async function d(e) {
@@ -18234,24 +18291,24 @@ function HL(e) {
 		}, i.value = "";
 	}
 	function p(e) {
-		m(AL(e), {
+		m(qL(e), {
 			enableLinkedSkillResolution: !1,
 			message: ""
 		});
 	}
 	function m(t, n) {
-		let r = FL(t, n);
+		let r = bL(t, n);
 		if (r.rows.length) {
-			c.value = r, VL(e, c.value);
+			c.value = r, QL(e, c.value);
 			return;
 		}
 		b(t, n.message);
 	}
 	function h() {
 		let e = s.value;
-		e && (s.value = null, m(jL(e), {
+		e && (s.value = null, m(JL(e), {
 			enableLinkedSkillResolution: !r.value.askForLinkedSkillSpecializations,
-			message: ML(e)
+			message: YL(e)
 		}));
 	}
 	function g(e, t) {
@@ -18264,7 +18321,7 @@ function HL(e) {
 	function v() {
 		let e = c.value;
 		if (e) {
-			for (let n of e.rows) t.setSkillGrantResolution(n.resolutionKey, IL(n));
+			for (let n of e.rows) t.setSkillGrantResolution(n.resolutionKey, xL(n));
 			for (let n of e.linkedRows) t.setSkillGrantResolution(n.resolutionKey, t.getSkillGrantResolution(n.linkedFromKey));
 			c.value = null, b(e.entries, e.message);
 		}
@@ -18281,10 +18338,10 @@ function HL(e) {
 		return n.value.some((t) => t.uuid === e);
 	}
 	function S(e) {
-		return NL(s.value, e);
+		return XL(s.value, e);
 	}
 	function C(e, t) {
-		let n = PL({
+		let n = ZL({
 			candidateUuid: e.uuid,
 			isAlreadyQueued: x(e.uuid),
 			prompt: s.value,
@@ -18300,7 +18357,7 @@ function HL(e) {
 		dismissLowerCareerPrompt: _,
 		dismissSkillResolutionPrompt: y,
 		errorMessage: a,
-		getSkillResolutionLabel: LL,
+		getSkillResolutionLabel: SL,
 		handleCareerDrop: u,
 		isCareerQueued: x,
 		isFindingLowerCareers: o,
@@ -18309,20 +18366,20 @@ function HL(e) {
 		pendingLowerCareerPrompt: s,
 		pendingSkillResolutionPrompt: c,
 		setLowerCareerSelected: C,
-		usesFreeformSkillSpecialization: RL
+		usesFreeformSkillSpecialization: CL
 	};
 }
-function UL(e) {
+function eR(e) {
 	return e instanceof Error ? e.message : "The NPC Builder could not finish that action.";
 }
 //#endregion
 //#region src/view/apps/npc-builder/NpcBuilderApp/useNpcBuilderCareerDropWorkflow.ts
-function WL(e) {
-	return HL(e);
+function tR(e) {
+	return $L(e);
 }
 //#endregion
 //#region src/view/apps/npc-builder/NpcBuilderApp/useNpcBuilderInitialData.ts
-function GL(e, t) {
+function nR(e, t) {
 	let n = LA(), { selectedBaseActorUuid: r, settings: i } = oc(n), a = /* @__PURE__ */ j(!1), o = /* @__PURE__ */ j(!1), s = /* @__PURE__ */ j([]);
 	kr(async () => {
 		a.value = !0;
@@ -18335,7 +18392,7 @@ function GL(e, t) {
 			]);
 			n.hydrateSettings(t), n.hydrateActorFolders(r), n.hydrateItemFolders(i), s.value = a, await Promise.all([c(), l()]);
 		} catch (e) {
-			t.value = DL(e);
+			t.value = WL(e);
 		} finally {
 			a.value = !1;
 		}
@@ -18349,7 +18406,7 @@ function GL(e, t) {
 			let t = await e.loadBaseActorDraftData(r);
 			n.hydrateBaseActorDraftData(t);
 		} catch (e) {
-			t.value = DL(e), n.clearBaseDraftData();
+			t.value = WL(e), n.clearBaseDraftData();
 		} finally {
 			o.value = !1;
 		}
@@ -18370,56 +18427,56 @@ function GL(e, t) {
 }
 //#endregion
 //#region src/functions/npc-builder/metadata-lookups.ts
-function KL() {
+function rR() {
 	return {
 		inFlightNames: [],
 		successfulNames: []
 	};
 }
-function qL(e) {
+function iR(e) {
 	let t = /* @__PURE__ */ new Set();
 	for (let n of e) n.kind === "skill" && !n.characteristicKey && !jO(n.name) && t.add(n.name);
 	return [...t];
 }
-function JL(e) {
+function aR(e) {
 	let t = /* @__PURE__ */ new Set();
 	for (let n of e) n.kind === "talent" && !n.talentMaximumKey && t.add(n.name);
 	return [...t];
 }
-function YL(e, t) {
+function oR(e, t) {
 	let n = new Set([...t.inFlightNames, ...t.successfulNames]);
 	return e.filter((e) => {
 		let t = NO(e);
 		return n.has(t) ? !1 : (n.add(t), !0);
 	});
 }
-function XL(e, t) {
+function sR(e, t) {
 	return {
 		...e,
-		inFlightNames: $L([...e.inFlightNames, ...t])
+		inFlightNames: uR([...e.inFlightNames, ...t])
 	};
 }
-function ZL(e, t) {
-	let n = new Set($L(t));
+function cR(e, t) {
+	let n = new Set(uR(t));
 	return {
 		inFlightNames: e.inFlightNames.filter((e) => !n.has(e)),
-		successfulNames: $L([...e.successfulNames, ...n])
+		successfulNames: uR([...e.successfulNames, ...n])
 	};
 }
-function QL(e, t) {
-	let n = new Set($L(t));
+function lR(e, t) {
+	let n = new Set(uR(t));
 	return {
 		...e,
 		inFlightNames: e.inFlightNames.filter((e) => !n.has(e))
 	};
 }
-function $L(e) {
+function uR(e) {
 	return [...new Set([...e].map(NO).filter(Boolean))];
 }
 //#endregion
 //#region src/state/npc-builder/workflows/metadata-lookups-workflow.ts
-function eR(e) {
-	let t = LA(), { advancements: n } = oc(t), r = /* @__PURE__ */ j(KL()), i = /* @__PURE__ */ j(KL()), a = /* @__PURE__ */ j(""), o = /* @__PURE__ */ j(""), s = W(() => qL(n.value)), c = W(() => JL(n.value)), l = W(() => [a.value, o.value].filter(Boolean).join(" ")), u = W(() => l.value ? "degraded" : r.value.inFlightNames.length + i.value.inFlightNames.length > 0 ? "loading" : "ready");
+function dR(e) {
+	let t = LA(), { advancements: n } = oc(t), r = /* @__PURE__ */ j(rR()), i = /* @__PURE__ */ j(rR()), a = /* @__PURE__ */ j(""), o = /* @__PURE__ */ j(""), s = W(() => iR(n.value)), c = W(() => aR(n.value)), l = W(() => [a.value, o.value].filter(Boolean).join(" ")), u = W(() => l.value ? "degraded" : r.value.inFlightNames.length + i.value.inFlightNames.length > 0 ? "loading" : "ready");
 	Jn(s, (e) => {
 		d(e);
 	}, { immediate: !0 }), Jn(c, (e) => {
@@ -18430,14 +18487,14 @@ function eR(e) {
 			a.value = "";
 			return;
 		}
-		let i = YL(n, r.value);
+		let i = oR(n, r.value);
 		if (i.length) {
-			r.value = XL(r.value, i), a.value = "";
+			r.value = sR(r.value, i), a.value = "";
 			try {
 				let n = await e.listSkillCharacteristics(i);
-				r.value = ZL(r.value, i), t.hydrateSkillCharacteristics(n);
+				r.value = cR(r.value, i), t.hydrateSkillCharacteristics(n);
 			} catch (e) {
-				r.value = QL(r.value, i), a.value = tR("skill characteristics", e);
+				r.value = lR(r.value, i), a.value = fR("skill characteristics", e);
 			}
 		}
 	}
@@ -18446,14 +18503,14 @@ function eR(e) {
 			o.value = "";
 			return;
 		}
-		let r = YL(n, i.value);
+		let r = oR(n, i.value);
 		if (r.length) {
-			i.value = XL(i.value, r), o.value = "";
+			i.value = sR(i.value, r), o.value = "";
 			try {
 				let n = await e.listTalentMaximums(r);
-				i.value = ZL(i.value, r), t.hydrateTalentMaximums(n);
+				i.value = cR(i.value, r), t.hydrateTalentMaximums(n);
 			} catch (e) {
-				i.value = QL(i.value, r), o.value = tR("Talent maximums", e);
+				i.value = lR(i.value, r), o.value = fR("Talent maximums", e);
 			}
 		}
 	}
@@ -18466,42 +18523,42 @@ function eR(e) {
 		retryMetadataLookups: p
 	};
 }
-function tR(e, t) {
+function fR(e, t) {
 	return `Could not load ${e}.${t instanceof Error ? ` ${t.message}` : ""}`;
 }
 //#endregion
 //#region src/view/apps/npc-builder/NpcBuilderApp/useNpcBuilderMetadataLookups.ts
-function nR(e) {
-	return eR(e);
+function pR(e) {
+	return dR(e);
 }
 //#endregion
 //#region src/view/apps/npc-builder/NpcBuilderApp.vue?vue&type=script&setup=true&lang.ts
-var rR = ["aria-labelledby"], iR = { class: "dui-navbar app:sticky app:top-0 app:z-20 app:flex-wrap app:gap-2 app:bg-base-200 app:px-3 app:py-2" }, aR = { class: "dui-navbar-start app:min-w-64 app:flex-1" }, oR = { class: "app:min-w-0" }, sR = ["id"], cR = { class: "app:text-base-content/70" }, lR = { class: "dui-navbar-end app:w-auto app:shrink-0" }, uR = ["disabled"], dR = {
+var mR = ["aria-labelledby"], hR = { class: "dui-navbar app:sticky app:top-0 app:z-20 app:flex-wrap app:gap-2 app:bg-base-200 app:px-3 app:py-2" }, gR = { class: "dui-navbar-start app:min-w-64 app:flex-1" }, _R = { class: "app:min-w-0" }, vR = ["id"], yR = { class: "app:text-base-content/70" }, bR = { class: "dui-navbar-end app:w-auto app:shrink-0" }, xR = ["disabled"], SR = {
 	"aria-label": "NPC Builder sections",
 	class: "dui-tabs dui-tabs-box app:w-full app:overflow-x-auto",
 	role: "tablist"
-}, fR = [
+}, CR = [
 	"id",
 	"aria-controls",
 	"aria-selected",
 	"tabindex",
 	"onClick",
 	"onKeydown"
-], pR = ["id", "aria-labelledby"], mR = {
+], wR = ["id", "aria-labelledby"], TR = {
 	key: 0,
 	class: "dui-alert dui-alert-error",
 	role: "alert"
-}, hR = {
+}, ER = {
 	key: 1,
 	"aria-live": "polite",
 	class: "dui-alert dui-alert-info",
 	role: "status"
-}, gR = {
+}, DR = {
 	key: 2,
 	"aria-live": "polite",
 	class: "dui-alert dui-alert-warning",
 	role: "status"
-}, _R = /* @__PURE__ */ P({
+}, OR = /* @__PURE__ */ P({
 	__name: "NpcBuilderApp",
 	props: { bridge: {} },
 	setup(e) {
@@ -18536,27 +18593,27 @@ var rR = ["aria-labelledby"], iR = { class: "dui-navbar app:sticky app:top-0 app
 			let n = l.value.length - 1, r = null;
 			e.key === "ArrowLeft" ? r = t === 0 ? n : t - 1 : e.key === "ArrowRight" ? r = t === n ? 0 : t + 1 : e.key === "Home" ? r = 0 : e.key === "End" && (r = n), r !== null && (e.preventDefault(), o.value = l.value[r]?.id ?? o.value, (e.currentTarget?.parentElement?.querySelectorAll("[role=\"tab\"]")?.[r])?.focus());
 		}
-		let { buildMessage: d, chooseSkillSpecialization: f, confirmLowerCareerPrompt: p, confirmSkillResolutionPrompt: m, dismissLowerCareerPrompt: h, dismissSkillResolutionPrompt: g, errorMessage: _, getSkillResolutionLabel: v, handleCareerDrop: y, isCareerQueued: b, isFindingLowerCareers: x, isLowerCareerSelected: S, lowerCareerCandidateGroups: C, pendingLowerCareerPrompt: ee, pendingSkillResolutionPrompt: w, setLowerCareerSelected: te, usesFreeformSkillSpecialization: T } = WL(t.bridge), { buildNpc: ne, canBuild: re } = OL(t.bridge, o, d, _, x), { isLoadingActors: E, isLoadingBaseDraft: ie, traitDifficultyOptions: ae } = GL(t.bridge, _), { metadataLookupError: oe, metadataLookupStatus: se, retryMetadataLookups: D } = nR(t.bridge);
+		let { buildMessage: d, chooseSkillSpecialization: f, confirmLowerCareerPrompt: p, confirmSkillResolutionPrompt: m, dismissLowerCareerPrompt: h, dismissSkillResolutionPrompt: g, errorMessage: _, getSkillResolutionLabel: v, handleCareerDrop: y, isCareerQueued: b, isFindingLowerCareers: x, isLowerCareerSelected: S, lowerCareerCandidateGroups: C, pendingLowerCareerPrompt: ee, pendingSkillResolutionPrompt: w, setLowerCareerSelected: te, usesFreeformSkillSpecialization: T } = tR(t.bridge), { buildNpc: ne, canBuild: re } = GL(t.bridge, o, d, _, x), { isLoadingActors: E, isLoadingBaseDraft: ie, traitDifficultyOptions: ae } = nR(t.bridge, _), { metadataLookupError: oe, metadataLookupStatus: se, retryMetadataLookups: D } = pR(t.bridge);
 		return (e, r) => (L(), R("section", {
 			"aria-labelledby": `${M(s)}-heading`,
 			class: "app:flex app:min-h-full app:flex-col"
 		}, [
-			B("header", iR, [
-				B("div", aR, [B("div", oR, [
+			B("header", hR, [
+				B("div", gR, [B("div", _R, [
 					r[2] ||= B("span", { class: "dui-badge dui-badge-outline" }, "WFRP4e Customizer", -1),
 					B("h1", {
 						id: `${M(s)}-heading`,
 						class: "app:m-0 app:text-xl app:leading-tight"
-					}, " NPC Builder ", 8, sR),
-					B("small", cR, [M(i) ? (L(), R(I, { key: 0 }, [H(k(M(i).name) + " base · " + k(M(n)), 1)], 64)) : (L(), R(I, { key: 1 }, [H("Choose a base character, then shape the final NPC.")], 64))])
+					}, " NPC Builder ", 8, vR),
+					B("small", yR, [M(i) ? (L(), R(I, { key: 0 }, [H(k(M(i).name) + " base · " + k(M(n)), 1)], 64)) : (L(), R(I, { key: 1 }, [H("Choose a base character, then shape the final NPC.")], 64))])
 				])]),
-				B("div", lR, [B("button", {
+				B("div", bR, [B("button", {
 					class: "dui-btn dui-btn-primary",
 					disabled: !M(re),
 					type: "button",
 					onClick: r[0] ||= (...e) => M(ne) && M(ne)(...e)
-				}, " Build NPC ", 8, uR)]),
-				B("nav", dR, [(L(!0), R(I, null, F(l.value, (e, t) => (L(), R("button", {
+				}, " Build NPC ", 8, xR)]),
+				B("nav", SR, [(L(!0), R(I, null, F(l.value, (e, t) => (L(), R("button", {
 					id: `${M(s)}-${e.id}-tab`,
 					key: e.id,
 					"aria-controls": `${M(s)}-panel`,
@@ -18567,7 +18624,7 @@ var rR = ["aria-labelledby"], iR = { class: "dui-navbar app:sticky app:top-0 app
 					type: "button",
 					onClick: (t) => o.value = e.id,
 					onKeydown: (e) => u(e, t)
-				}, k(e.label), 43, fR))), 128))])
+				}, k(e.label), 43, CR))), 128))])
 			]),
 			V(GA, {
 				open: M(ee) !== null,
@@ -18599,7 +18656,7 @@ var rR = ["aria-labelledby"], iR = { class: "dui-navbar app:sticky app:top-0 app
 				title: "Resolve Skill Specializations",
 				onClose: M(g)
 			}, {
-				default: N(() => [M(w) ? (L(), z(EL, {
+				default: N(() => [M(w) ? (L(), z(UL, {
 					key: 0,
 					"get-skill-resolution-label": M(v),
 					prompt: M(w),
@@ -18623,8 +18680,8 @@ var rR = ["aria-labelledby"], iR = { class: "dui-navbar app:sticky app:top-0 app
 				class: "app:grid app:flex-1 app:content-start app:gap-3 app:p-3",
 				role: "tabpanel"
 			}, [
-				M(_) ? (L(), R("p", mR, k(M(_)), 1)) : M(d) ? (L(), R("p", hR, k(M(d)), 1)) : U("", !0),
-				M(se) === "degraded" ? (L(), R("div", gR, [
+				M(_) ? (L(), R("p", TR, k(M(_)), 1)) : M(d) ? (L(), R("p", ER, k(M(d)), 1)) : U("", !0),
+				M(se) === "degraded" ? (L(), R("div", DR, [
 					B("span", null, k(M(oe)), 1),
 					r[3] ||= B("span", null, "Advancement rows remain editable with reduced metadata.", -1),
 					B("button", {
@@ -18633,20 +18690,20 @@ var rR = ["aria-labelledby"], iR = { class: "dui-navbar app:sticky app:top-0 app
 						onClick: r[1] ||= (...e) => M(D) && M(D)(...e)
 					}, " Retry Metadata ")
 				])) : U("", !0),
-				o.value === "settings" ? (L(), z(LF, {
+				o.value === "settings" ? (L(), z(UF, {
 					key: 3,
 					bridge: t.bridge
-				}, null, 8, ["bridge"])) : o.value === "advancements" ? (L(), z($j, { key: 4 })) : o.value === "trappings" ? (L(), z(pL, {
+				}, null, 8, ["bridge"])) : o.value === "advancements" ? (L(), z($j, { key: 4 })) : o.value === "trappings" ? (L(), z(yL, {
 					key: 5,
 					bridge: t.bridge
-				}, null, 8, ["bridge"])) : o.value === "traits" ? (L(), z(LI, {
+				}, null, 8, ["bridge"])) : o.value === "traits" ? (L(), z(UI, {
 					key: 6,
 					bridge: t.bridge,
 					"difficulty-options": M(ae)
-				}, null, 8, ["bridge", "difficulty-options"])) : o.value === "spells" ? (L(), z(bI, {
+				}, null, 8, ["bridge", "difficulty-options"])) : o.value === "spells" ? (L(), z(EI, {
 					key: 7,
 					bridge: t.bridge
-				}, null, 8, ["bridge"])) : (L(), z(PP, {
+				}, null, 8, ["bridge"])) : (L(), z(BP, {
 					key: 8,
 					bridge: t.bridge,
 					"is-loading-actors": M(E),
@@ -18658,73 +18715,73 @@ var rR = ["aria-labelledby"], iR = { class: "dui-navbar app:sticky app:top-0 app
 					"is-loading-base-draft",
 					"onCareerDrop"
 				]))
-			], 8, pR)
-		], 8, rR));
+			], 8, wR)
+		], 8, mR));
 	}
 });
 //#endregion
 //#region src/functions/npc-builder/extract-career-grants.ts
-function vR(e) {
+function kR(e) {
 	return {
-		characteristics: yR(e),
-		skills: bR(e),
-		talents: SR(e, [["talents", "value"], ["talents"]]),
-		trappings: SR(e, [["trappings", "value"], ["trappings"]])
+		characteristics: AR(e),
+		skills: jR(e),
+		talents: NR(e, [["talents", "value"], ["talents"]]),
+		trappings: NR(e, [["trappings", "value"], ["trappings"]])
 	};
 }
-function yR(e) {
-	let t = SR(e, [["characteristics", "value"], ["characteristics"]]);
-	if (t.length) return t.map(xR);
+function AR(e) {
+	let t = NR(e, [["characteristics", "value"], ["characteristics"]]);
+	if (t.length) return t.map(MR);
 	let n = Y(e, ["characteristics"]);
 	if (!J(n)) return [];
 	let r = [];
-	for (let [e, t] of Object.entries(n)) t && r.push(xR(e));
-	return wR(r);
+	for (let [e, t] of Object.entries(n)) t && r.push(MR(e));
+	return FR(r);
 }
-function bR(e) {
-	return SR(e, [["skills", "value"], ["skills"]], { preserveDuplicates: !0 });
+function jR(e) {
+	return NR(e, [["skills", "value"], ["skills"]], { preserveDuplicates: !0 });
 }
-function xR(e) {
+function MR(e) {
 	let t = e.trim().toLocaleLowerCase();
 	if (Ac(t)) return Oc[t];
 	let n = kc[t];
 	return n ? Oc[n] : e.trim();
 }
-function SR(e, t, n = {}) {
+function NR(e, t, n = {}) {
 	for (let r of t) {
 		let t = zl(Y(e, r));
-		if (t.length) return n.preserveDuplicates ? CR(t) : wR(t);
+		if (t.length) return n.preserveDuplicates ? PR(t) : FR(t);
 	}
 	return [];
 }
-function CR(e) {
+function PR(e) {
 	return e.map((e) => e.trim()).filter(Boolean);
 }
-function wR(e) {
-	return [...new Set(CR(e))].sort((e, t) => e.localeCompare(t));
+function FR(e) {
+	return [...new Set(PR(e))].sort((e, t) => e.localeCompare(t));
 }
 //#endregion
 //#region src/module/wfrp4e/career-summary.ts
-function TR(e) {
+function IR(e) {
 	return {
-		careerGroup: ER(e),
-		grants: vR(e.system),
+		careerGroup: LR(e),
+		grants: kR(e.system),
 		img: e.img ?? "",
-		level: DR(e),
+		level: RR(e),
 		name: e.name,
 		uuid: e.uuid
 	};
 }
-function ER(e) {
+function LR(e) {
 	return X(e.system, ["careergroup", "value"]);
 }
-function DR(e) {
+function RR(e) {
 	let t = Y(e.system, ["level", "value"]), n = Number(t);
 	return Number.isFinite(n) ? n : null;
 }
 //#endregion
 //#region src/module/wfrp4e/career-index.ts
-var OR = [
+var zR = [
 	"name",
 	"type",
 	"img",
@@ -18734,46 +18791,46 @@ var OR = [
 	"system.skills",
 	"system.talents",
 	"system.trappings"
-], kR = /* @__PURE__ */ new Map(), AR = "idle", jR = null;
-function MR() {
-	return jR || (AR = "indexing", kR.clear(), jR = PR().then(() => {
-		AR = "ready";
+], BR = /* @__PURE__ */ new Map(), VR = "idle", HR = null;
+function UR() {
+	return HR || (VR = "indexing", BR.clear(), HR = GR().then(() => {
+		VR = "ready";
 	}).catch((e) => {
-		AR = "error", t("wfrp4e-customizer-apps | Career indexing failed.", e);
-	}), jR);
+		VR = "error", t("wfrp4e-customizer-apps | Career indexing failed.", e);
+	}), HR);
 }
-async function NR(e) {
-	return AR === "idle" && MR(), !e.careerGroup || e.level === null ? [] : [...kR.values()].filter((t) => zR(t, e)).sort(VR);
+async function WR(e) {
+	return VR === "idle" && UR(), !e.careerGroup || e.level === null ? [] : [...BR.values()].filter((t) => XR(t, e)).sort(QR);
 }
-async function PR() {
-	FR(), await ZE();
+async function GR() {
+	KR(), await ZE();
 	for (let e of game.packs ?? []) {
 		if (!JE(e) || !e.getIndex) continue;
-		let t = await e.getIndex({ fields: OR });
+		let t = await e.getIndex({ fields: zR });
 		for (let n of XE(t)) {
-			let t = IR(e, n);
-			t && kR.set(t.uuid, t);
+			let t = qR(e, n);
+			t && BR.set(t.uuid, t);
 		}
 		await ZE();
 	}
 }
-function FR() {
-	for (let e of game.items?.contents ?? []) e.type === "career" && kR.set(e.uuid, TR(e));
+function KR() {
+	for (let e of game.items?.contents ?? []) e.type === "career" && BR.set(e.uuid, IR(e));
 }
-function IR(e, t) {
+function qR(e, t) {
 	let n = qE(e, t);
 	if (t.type !== "career" || !t.name || !n) return null;
 	let r = Y(t, ["system"]);
 	return {
-		careerGroup: LR(t),
-		grants: vR(r),
+		careerGroup: JR(t),
+		grants: kR(r),
 		img: t.img ?? "",
-		level: RR(t),
+		level: YR(t),
 		name: t.name,
 		uuid: n
 	};
 }
-function LR(e) {
+function JR(e) {
 	let t = Y(e, [
 		"system",
 		"careergroup",
@@ -18781,7 +18838,7 @@ function LR(e) {
 	]);
 	return typeof t == "string" ? t.trim() : "";
 }
-function RR(e) {
+function YR(e) {
 	let t = Y(e, [
 		"system",
 		"level",
@@ -18789,69 +18846,69 @@ function RR(e) {
 	]), n = Number(t);
 	return Number.isFinite(n) ? n : null;
 }
-function zR(e, t) {
-	return e.uuid !== t.uuid && e.level !== null && t.level !== null && e.level < t.level && BR(e.careerGroup) === BR(t.careerGroup);
+function XR(e, t) {
+	return e.uuid !== t.uuid && e.level !== null && t.level !== null && e.level < t.level && ZR(e.careerGroup) === ZR(t.careerGroup);
 }
-function BR(e) {
+function ZR(e) {
 	return e.trim().toLocaleLowerCase();
 }
-function VR(e, t) {
+function QR(e, t) {
 	let n = e.level ?? 0, r = t.level ?? 0;
 	return n === r ? e.name.localeCompare(t.name) : n - r;
 }
 //#endregion
 //#region src/module/wfrp4e/skill-specializations.ts
-var HR = [
+var $R = [
 	"name",
 	"type",
 	"system.characteristic.value"
-], UR = /* @__PURE__ */ new Map(), WR = /* @__PURE__ */ new Map(), GR = /* @__PURE__ */ new Map(), KR = "idle", qR = null;
-async function JR(e) {
+], ez = /* @__PURE__ */ new Map(), tz = /* @__PURE__ */ new Map(), nz = /* @__PURE__ */ new Map(), rz = "idle", iz = null;
+async function az(e) {
 	let t = NO(e);
-	return t ? (KR === "idle" && XR(), qR && await qR, [...UR.get(t) ?? []].sort((e, t) => e.localeCompare(t))) : [];
+	return t ? (rz === "idle" && sz(), iz && await iz, [...ez.get(t) ?? []].sort((e, t) => e.localeCompare(t))) : [];
 }
-async function YR(e) {
-	return KR === "idle" && XR(), qR && await qR, e.flatMap((e) => {
-		let t = nz(e);
+async function oz(e) {
+	return rz === "idle" && sz(), iz && await iz, e.flatMap((e) => {
+		let t = pz(e);
 		return t ? [{
 			...t,
 			skillName: e
 		}] : [];
 	});
 }
-function XR() {
-	return qR || (KR = "indexing", UR.clear(), WR.clear(), GR.clear(), qR = ZR().then(() => {
-		KR = "ready";
+function sz() {
+	return iz || (rz = "indexing", ez.clear(), tz.clear(), nz.clear(), iz = cz().then(() => {
+		rz = "ready";
 	}).catch((e) => {
-		KR = "error", t("wfrp4e-customizer-apps | Skill specialization indexing failed.", e);
-	}), qR);
+		rz = "error", t("wfrp4e-customizer-apps | Skill specialization indexing failed.", e);
+	}), iz);
 }
-async function ZR() {
-	rz(), await ZE();
+async function cz() {
+	mz(), await ZE();
 	for (let e of game.packs ?? []) {
 		if (!JE(e) || !e.getIndex) continue;
-		let t = await e.getIndex({ fields: HR });
-		for (let e of XE(t)) $R(e);
+		let t = await e.getIndex({ fields: $R });
+		for (let e of XE(t)) uz(e);
 		await ZE();
 	}
 }
-function QR(e) {
+function lz(e) {
 	if (e.type !== "skill") return;
-	ez(e);
+	dz(e);
 	let t = AO(e.name);
 	if (!t) return;
-	let n = NO(t.baseName), r = UR.get(n) ?? /* @__PURE__ */ new Set();
-	r.add(t.specialization), UR.set(n, r);
+	let n = NO(t.baseName), r = ez.get(n) ?? /* @__PURE__ */ new Set();
+	r.add(t.specialization), ez.set(n, r);
 }
-function $R(e) {
+function uz(e) {
 	if (e.type !== "skill" || !e.name) return;
-	tz(e);
+	fz(e);
 	let t = AO(e.name);
 	if (!t) return;
-	let n = NO(t.baseName), r = UR.get(n) ?? /* @__PURE__ */ new Set();
-	r.add(t.specialization), UR.set(n, r);
+	let n = NO(t.baseName), r = ez.get(n) ?? /* @__PURE__ */ new Set();
+	r.add(t.specialization), ez.set(n, r);
 }
-function ez(e) {
+function dz(e) {
 	let t = X(e.system, ["characteristic", "value"]);
 	if (!Ac(t)) return;
 	let n = {
@@ -18859,9 +18916,9 @@ function ez(e) {
 		characteristicName: Oc[t],
 		skillName: e.name
 	}, r = NO(e.name), i = NO(AO(e.name)?.baseName ?? e.name);
-	WR.set(r, n), GR.has(i) || GR.set(i, n);
+	tz.set(r, n), nz.has(i) || nz.set(i, n);
 }
-function tz(e) {
+function fz(e) {
 	let t = X(e, [
 		"system",
 		"characteristic",
@@ -18873,18 +18930,18 @@ function tz(e) {
 		characteristicName: Oc[t],
 		skillName: e.name
 	}, r = NO(e.name), i = NO(AO(e.name)?.baseName ?? e.name);
-	WR.set(r, n), GR.has(i) || GR.set(i, n);
+	tz.set(r, n), nz.has(i) || nz.set(i, n);
 }
-function nz(e) {
+function pz(e) {
 	let t = NO(e), n = NO(AO(e)?.baseName ?? e);
-	return WR.get(t) ?? GR.get(n) ?? null;
+	return tz.get(t) ?? nz.get(n) ?? null;
 }
-function rz() {
-	for (let e of game.items?.contents ?? []) QR(e);
+function mz() {
+	for (let e of game.items?.contents ?? []) lz(e);
 }
 //#endregion
 //#region src/module/foundry/item-sources.ts
-function iz(e, t) {
+function hz(e, t) {
 	return {
 		img: "systems/wfrp4e/icons/blank.png",
 		name: e,
@@ -18892,33 +18949,36 @@ function iz(e, t) {
 		type: t
 	};
 }
-function az(e, t, n) {
-	let r = e ? e.toObject() : iz(t, n);
+function gz(e, t, n) {
+	let r = e ? e.toObject() : hz(t, n);
 	return delete r._id, r;
 }
-function oz(e, t, n) {
-	return e.items?.contents.find((e) => e.type === n && lz(e.name, t)) ?? null;
+function _z(e, t, n) {
+	return vz(e, t, n)[0] ?? null;
 }
-function sz(e, t, n) {
-	return e.items?.contents.find((e) => t && e.uuid === t ? !0 : lz(e.name, n)) ?? null;
+function vz(e, t, n) {
+	return e.items?.contents.filter((e) => e.type === n && xz(e.name, t)) ?? [];
 }
-function cz(e, t) {
-	return game.items?.contents.find((n) => t.includes(n.type) && lz(n.name, e)) ?? null;
+function yz(e, t, n) {
+	return e.items?.contents.find((e) => t && e.uuid === t ? !0 : xz(e.name, n)) ?? null;
 }
-function lz(e, t) {
+function bz(e, t) {
+	return game.items?.contents.find((n) => t.includes(n.type) && xz(n.name, e)) ?? null;
+}
+function xz(e, t) {
 	return e.trim().toLocaleLowerCase() === t.trim().toLocaleLowerCase();
 }
 //#endregion
 //#region src/module/wfrp4e/item-lookup.ts
-async function uz(e, t) {
-	return await game.wfrp4e?.utility?.findItem?.(e, t) || cz(e, t);
+async function Sz(e, t) {
+	return await game.wfrp4e?.utility?.findItem?.(e, t) || bz(e, t);
 }
 //#endregion
 //#region src/module/wfrp4e/talent-maximums.ts
-async function dz(e) {
+async function Cz(e) {
 	let t = [];
-	for (let n of fz(e)) {
-		let e = await uz(n, ["talent"]);
+	for (let n of wz(e)) {
+		let e = await Sz(n, ["talent"]);
 		e && t.push({
 			maximumFormula: X(e.system, ["max", "formula"]),
 			maximumKey: X(e.system, ["max", "value"]),
@@ -18927,7 +18987,7 @@ async function dz(e) {
 	}
 	return t;
 }
-function fz(e) {
+function wz(e) {
 	let t = /* @__PURE__ */ new Set(), n = [];
 	for (let r of e) {
 		let e = r.trim().toLocaleLowerCase();
@@ -18937,227 +18997,243 @@ function fz(e) {
 }
 //#endregion
 //#region src/functions/npc-builder/normalize-npc-builder-settings.ts
-var pz = {
+var Tz = {
 	...Ik(),
 	allowBaseActorCharacteristics: !0,
 	allowBaseActorSkills: !0,
 	allowBaseActorTalents: !0
 };
-function mz(e) {
+function Ez(e) {
 	let t = Ik();
-	return gz(e) ? {
-		allowBaseActorCharacteristics: _z(e.allowBaseActorCharacteristics, pz.allowBaseActorCharacteristics),
-		allowBaseActorSkills: _z(e.allowBaseActorSkills, pz.allowBaseActorSkills),
-		allowBaseActorTalents: _z(e.allowBaseActorTalents, pz.allowBaseActorTalents),
-		allowBaseActorTraits: _z(e.allowBaseActorTraits, pz.allowBaseActorTraits),
-		allowBaseActorTrappings: _z(e.allowBaseActorTrappings, pz.allowBaseActorTrappings),
-		askForLinkedSkillSpecializations: _z(e.askForLinkedSkillSpecializations, pz.askForLinkedSkillSpecializations),
-		autoSelectGrantedSpells: _z(e.autoSelectGrantedSpells, pz.autoSelectGrantedSpells),
-		baseActorFolderUuid: vz(e.baseActorFolderUuid, pz.baseActorFolderUuid),
-		includeSpeciesInName: _z(e.includeSpeciesInName, pz.includeSpeciesInName),
-		lowerCareerMode: hz(e.lowerCareerMode) ? e.lowerCareerMode : pz.lowerCareerMode,
-		outputActorFolderUuid: vz(e.outputActorFolderUuid, pz.outputActorFolderUuid),
-		quickTraitFolderUuid: vz(e.quickTraitFolderUuid, pz.quickTraitFolderUuid),
-		searchCompendiumPortraitAssets: _z(e.searchCompendiumPortraitAssets, pz.searchCompendiumPortraitAssets),
-		searchFoundryPortraitAssets: _z(e.searchFoundryPortraitAssets, pz.searchFoundryPortraitAssets),
-		searchWebPortraitAssets: _z(e.searchWebPortraitAssets, pz.searchWebPortraitAssets)
+	return Oz(e) ? {
+		allowBaseActorCharacteristics: kz(e.allowBaseActorCharacteristics, Tz.allowBaseActorCharacteristics),
+		allowBaseActorSkills: kz(e.allowBaseActorSkills, Tz.allowBaseActorSkills),
+		allowBaseActorTalents: kz(e.allowBaseActorTalents, Tz.allowBaseActorTalents),
+		allowBaseActorTraits: kz(e.allowBaseActorTraits, Tz.allowBaseActorTraits),
+		allowBaseActorTrappings: kz(e.allowBaseActorTrappings, Tz.allowBaseActorTrappings),
+		askForLinkedSkillSpecializations: kz(e.askForLinkedSkillSpecializations, Tz.askForLinkedSkillSpecializations),
+		autoSelectGrantedSpells: kz(e.autoSelectGrantedSpells, Tz.autoSelectGrantedSpells),
+		baseActorFolderUuid: Az(e.baseActorFolderUuid, Tz.baseActorFolderUuid),
+		includeSpeciesInName: kz(e.includeSpeciesInName, Tz.includeSpeciesInName),
+		lowerCareerMode: Dz(e.lowerCareerMode) ? e.lowerCareerMode : Tz.lowerCareerMode,
+		outputActorFolderUuid: Az(e.outputActorFolderUuid, Tz.outputActorFolderUuid),
+		quickTraitFolderUuid: Az(e.quickTraitFolderUuid, Tz.quickTraitFolderUuid),
+		searchCompendiumPortraitAssets: kz(e.searchCompendiumPortraitAssets, Tz.searchCompendiumPortraitAssets),
+		searchFoundryPortraitAssets: kz(e.searchFoundryPortraitAssets, Tz.searchFoundryPortraitAssets),
+		searchWebPortraitAssets: kz(e.searchWebPortraitAssets, Tz.searchWebPortraitAssets)
 	} : t;
 }
-function hz(e) {
+function Dz(e) {
 	return e === "auto-add-all" || e === "never" || e === "prompt";
 }
-function gz(e) {
+function Oz(e) {
 	return typeof e == "object" && !!e && !Array.isArray(e);
 }
-function _z(e, t) {
+function kz(e, t) {
 	return typeof e == "boolean" ? e : t;
 }
-function vz(e, t) {
+function Az(e, t) {
 	return typeof e == "string" ? e : t;
 }
 //#endregion
 //#region src/module/apps/npc-builder/settings.ts
-var yz = Hw({
+var jz = Hw({
 	defaultValue: Ik(),
 	key: "npcBuilderSettings",
 	name: "NPC Builder Settings",
-	normalize: mz
+	normalize: Ez
 });
-function bz() {
-	Uw(yz);
+function Mz() {
+	Uw(jz);
 }
-function xz() {
-	return Ww(yz);
+function Nz() {
+	return Ww(jz);
 }
-async function Sz(e) {
-	return await Gw(yz, e);
-}
-//#endregion
-//#region src/module/apps/npc-builder/foundry-bridge/advancements.ts
-async function Cz(e, t) {
-	let n = {}, r = [], i = [];
-	for (let a of t) {
-		let t = Math.floor(a.current);
-		if (t === 0) continue;
-		let o = a.baseAdvances + t;
-		if (a.kind === "characteristic") {
-			kz(n, a, o);
-			continue;
-		}
-		let s = oz(e, a.name, a.kind);
-		if (s) {
-			r.push({
-				_id: s.id,
-				"system.advances.value": o
-			});
-			continue;
-		}
-		let c = az(await uz(a.name, [a.kind]), a.name, a.kind);
-		c.type = a.kind, Bl(c, [
-			"system",
-			"advances",
-			"value"
-		], o), i.push(c);
-	}
-	Object.keys(n).length && await e.update(n), r.length && e.updateEmbeddedDocuments && await e.updateEmbeddedDocuments("Item", r), i.length && await e.createEmbeddedDocuments("Item", i);
-}
-function wz(e) {
-	let t = [];
-	for (let [n, r] of Object.entries(Oc)) {
-		let i = Il(e.system, [[
-			"characteristics",
-			n,
-			"advances",
-			"value"
-		], [
-			"characteristics",
-			n,
-			"advances"
-		]]), a = Il(e.system, [
-			[
-				"characteristics",
-				n,
-				"value",
-				"value"
-			],
-			[
-				"characteristics",
-				n,
-				"value"
-			],
-			[
-				"characteristics",
-				n,
-				"total",
-				"value"
-			],
-			[
-				"characteristics",
-				n,
-				"total"
-			],
-			[
-				"characteristics",
-				n,
-				"initial",
-				"value"
-			],
-			[
-				"characteristics",
-				n,
-				"initial"
-			]
-		], i);
-		t.push({
-			baseAdvances: i,
-			current: a,
-			kind: "characteristic",
-			name: r
-		});
-	}
-	return t;
-}
-function Tz(e, t) {
-	return e.items?.contents.filter((e) => e.type === t).map((n) => Ez(e, n, t)) ?? [];
-}
-function Ez(e, t, n) {
-	let r = Il(t.system, [["advances", "value"], ["advances"]]);
-	if (n === "talent") return {
-		baseAdvances: r,
-		current: r,
-		kind: n,
-		name: t.name,
-		talentMaximumFormula: X(t.system, ["max", "formula"]),
-		talentMaximumKey: X(t.system, ["max", "value"])
-	};
-	let i = Dz(t), a = i ? Oz(e, i) : 0, o = Ll(t.system, [["total", "value"], ["total"]]), s = o !== null && i ? Math.max(0, o - a) : 0, c = Math.max(r, s), l = {
-		baseAdvances: c,
-		current: i ? a + c : c,
-		kind: n,
-		name: t.name
-	};
-	return i && (l.characteristicKey = i, l.characteristicName = Oc[i]), l;
-}
-function Dz(e) {
-	let t = X(e.system, ["characteristic", "value"]);
-	return Ac(t) ? t : void 0;
-}
-function Oz(e, t) {
-	return Il(e.system, [
-		[
-			"characteristics",
-			t,
-			"value",
-			"value"
-		],
-		[
-			"characteristics",
-			t,
-			"value"
-		],
-		[
-			"characteristics",
-			t,
-			"total",
-			"value"
-		],
-		[
-			"characteristics",
-			t,
-			"total"
-		],
-		[
-			"characteristics",
-			t,
-			"initial",
-			"value"
-		],
-		[
-			"characteristics",
-			t,
-			"initial"
-		]
-	]);
-}
-function kz(e, t, n) {
-	let r = kc[t.name.trim().toLocaleLowerCase()];
-	r && (e[`system.characteristics.${r}.advances`] = n);
+async function Pz(e) {
+	return await Gw(jz, e);
 }
 //#endregion
 //#region src/module/foundry/embedded-items.ts
-function Az() {
+function Fz() {
 	return {
 		creates: [],
 		deletes: [],
 		updates: []
 	};
 }
-async function jz(e, t) {
+async function Iz(e, t) {
 	t.deletes.length && e.deleteEmbeddedDocuments && await e.deleteEmbeddedDocuments("Item", t.deletes), t.updates.length && e.updateEmbeddedDocuments && await e.updateEmbeddedDocuments("Item", t.updates), t.creates.length && await e.createEmbeddedDocuments("Item", t.creates);
 }
 //#endregion
+//#region src/module/apps/npc-builder/xp-source-values.ts
+function Lz(e, t) {
+	return Il(e, [[
+		"characteristics",
+		t,
+		"initial",
+		"value"
+	], [
+		"characteristics",
+		t,
+		"initial"
+	]]) + Il(e, [[
+		"characteristics",
+		t,
+		"modifier",
+		"value"
+	], [
+		"characteristics",
+		t,
+		"modifier"
+	]]) + Il(e, [[
+		"characteristics",
+		t,
+		"advances",
+		"value"
+	], [
+		"characteristics",
+		t,
+		"advances"
+	]]);
+}
+//#endregion
+//#region src/module/apps/npc-builder/foundry-bridge/advancements.ts
+async function Rz(e, t) {
+	let n = {}, r = Fz();
+	for (let i of t) {
+		let t = Math.floor(i.current);
+		if (i.kind === "talent") {
+			await Gz(e, i, t, r);
+			continue;
+		}
+		if (t === 0) continue;
+		let a = i.baseAdvances + t;
+		if (i.kind === "characteristic") {
+			Wz(n, i, a);
+			continue;
+		}
+		let o = _z(e, i.name, i.kind);
+		if (o) {
+			r.updates.push({
+				_id: o.id,
+				"system.advances.value": a
+			});
+			continue;
+		}
+		let s = gz(await Sz(i.name, [i.kind]), i.name, i.kind);
+		s.type = i.kind, Bl(s, [
+			"system",
+			"advances",
+			"value"
+		], a), r.creates.push(s);
+	}
+	Object.keys(n).length && await e.update(n), await Iz(e, r);
+}
+function zz(e) {
+	let t = e.toObject().system, n = [];
+	for (let [e, r] of Object.entries(Oc)) {
+		let i = Il(t, [[
+			"characteristics",
+			e,
+			"advances",
+			"value"
+		], [
+			"characteristics",
+			e,
+			"advances"
+		]]), a = Il(t, [[
+			"characteristics",
+			e,
+			"modifier",
+			"value"
+		], [
+			"characteristics",
+			e,
+			"modifier"
+		]]), o = Il(t, [[
+			"characteristics",
+			e,
+			"initial",
+			"value"
+		], [
+			"characteristics",
+			e,
+			"initial"
+		]], 0);
+		n.push({
+			baseAdvances: i,
+			baseModifier: a,
+			current: o + a + i,
+			kind: "characteristic",
+			name: r
+		});
+	}
+	return n;
+}
+function Bz(e, t) {
+	return t === "talent" ? Vz(e) : e.items?.contents.filter((e) => e.type === t).map((n) => Hz(e, n, t)) ?? [];
+}
+function Vz(e) {
+	let t = /* @__PURE__ */ new Map();
+	for (let n of e.items?.contents.filter((e) => e.type === "talent") ?? []) {
+		let e = n.toObject().system, r = n.name.trim().toLocaleLowerCase(), i = Il(e, [["advances", "value"], ["advances"]]), a = t.get(r);
+		if (a) {
+			a.baseAdvances += i, a.current += i;
+			continue;
+		}
+		t.set(r, {
+			baseAdvances: i,
+			current: i,
+			kind: "talent",
+			name: n.name,
+			talentMaximumFormula: X(e, ["max", "formula"]),
+			talentMaximumKey: X(e, ["max", "value"])
+		});
+	}
+	return [...t.values()];
+}
+function Hz(e, t, n) {
+	let r = t.toObject().system, i = Il(r, [["advances", "value"], ["advances"]]);
+	if (n === "talent") return {
+		baseAdvances: i,
+		current: i,
+		kind: n,
+		name: t.name,
+		talentMaximumFormula: X(r, ["max", "formula"]),
+		talentMaximumKey: X(r, ["max", "value"])
+	};
+	let a = Il(r, [["modifier", "value"], ["modifier"]]), o = Uz(r), s = {
+		baseAdvances: i,
+		baseModifier: a,
+		current: (o ? Lz(e.toObject().system, o) : 0) + i + a,
+		kind: n,
+		name: t.name
+	};
+	return o && (s.characteristicKey = o, s.characteristicName = Oc[o]), s;
+}
+function Uz(e) {
+	let t = X(e, ["characteristic", "value"]);
+	return Ac(t) ? t : void 0;
+}
+function Wz(e, t, n) {
+	let r = kc[t.name.trim().toLocaleLowerCase()];
+	r && (e[`system.characteristics.${r}.advances`] = n);
+}
+async function Gz(e, t, n, r) {
+	let i = Math.max(0, t.baseAdvances + n), a = vz(e, t.name, "talent"), o = a[0] ?? await Sz(t.name, ["talent"]);
+	r.deletes.push(...a.map((e) => e.id));
+	for (let e = 0; e < i; e += 1) {
+		let e = gz(o, t.name, "talent");
+		e.type = "talent", Bl(e, [
+			"system",
+			"advances",
+			"value"
+		], 1), r.creates.push(e);
+	}
+}
+//#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/traits/config.ts
-function Mz(e, t) {
+function Kz(e, t) {
 	Bl(e, [
 		"system",
 		"specification",
@@ -19172,7 +19248,7 @@ function Mz(e, t) {
 		"dice"
 	], t.dice);
 }
-function Nz(e, t) {
+function qz(e, t) {
 	return {
 		_id: e,
 		"system.specification.value": t.specification,
@@ -19180,74 +19256,74 @@ function Nz(e, t) {
 		...t.damage && t.dice ? { "system.rollable.dice": t.dice } : {}
 	};
 }
-function Pz(e) {
+function Jz(e) {
 	return {
 		..._O(),
-		attackType: Rz(e.system, ["rollable", "attackType"]) || "melee",
-		bonusCharacteristic: Rz(e.system, ["rollable", "bonusCharacteristic"]),
+		attackType: Qz(e.system, ["rollable", "attackType"]) || "melee",
+		bonusCharacteristic: Qz(e.system, ["rollable", "bonusCharacteristic"]),
 		damage: Rl(e.system, [["rollable", "damage"]]),
-		defaultDifficulty: Rz(e.system, ["rollable", "defaultDifficulty"]) || "challenging",
-		dice: Rz(e.system, ["rollable", "dice"]),
+		defaultDifficulty: Qz(e.system, ["rollable", "defaultDifficulty"]) || "challenging",
+		dice: Qz(e.system, ["rollable", "dice"]),
 		rollable: Rl(e.system, [["rollable", "value"]]),
-		skill: Rz(e.system, ["rollable", "skill"]),
+		skill: Qz(e.system, ["rollable", "skill"]),
 		sl: Rl(e.system, [["rollable", "SL"]], !0),
-		specification: Rz(e.system, ["specification", "value"])
+		specification: Qz(e.system, ["specification", "value"])
 	};
 }
-function Fz(e) {
-	return Lz(e.system);
+function Yz(e) {
+	return Zz(e.system);
 }
-function Iz(e) {
-	return Lz(e.system);
+function Xz(e) {
+	return Zz(e.system);
 }
-function Lz(e) {
+function Zz(e) {
 	return Rl(e, [["disabled"], ["disabled", "value"]]);
 }
-function Rz(e, t) {
+function Qz(e, t) {
 	let n = Y(e, t);
 	return typeof n == "string" ? n.trim() : typeof n == "number" ? String(n) : "";
 }
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/traits/apply.ts
-async function zz(e, t) {
-	let n = Az();
+async function $z(e, t) {
+	let n = Fz();
 	for (let r of t) {
-		let t = r.source === "base" ? sz(e, r.sourceUuid, r.name) : oz(e, r.name, "trait");
+		let t = r.source === "base" ? yz(e, r.sourceUuid, r.name) : _z(e, r.name, "trait");
 		if (r.ignored) {
 			t && n.deletes.push(t.id);
 			continue;
 		}
 		if (t) {
-			n.updates.push(Nz(t.id, r.config));
+			n.updates.push(qz(t.id, r.config));
 			continue;
 		}
-		let i = az(r.sourceUuid ? await Bz(r.sourceUuid) : await uz(r.name, ["trait"]), r.name, "trait");
-		i.type = "trait", Bl(i, ["system", "disabled"], !1), Mz(i, r.config), n.creates.push(i);
+		let i = gz(r.sourceUuid ? await eB(r.sourceUuid) : await Sz(r.name, ["trait"]), r.name, "trait");
+		i.type = "trait", Bl(i, ["system", "disabled"], !1), Kz(i, r.config), n.creates.push(i);
 	}
-	await jz(e, n);
+	await Iz(e, n);
 }
-async function Bz(e) {
+async function eB(e) {
 	let t = await fromUuid(e);
 	return nE(t) ? t : null;
 }
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/traits/actor-traits.ts
-function Vz(e) {
-	return e.items?.contents.filter((e) => e.type === "trait" && !Fz(e)).map(Wz) ?? [];
+function tB(e) {
+	return e.items?.contents.filter((e) => e.type === "trait" && !Yz(e)).map(iB) ?? [];
 }
-function Hz(e) {
-	return e.items?.contents.filter((e) => e.type === "trait" && Fz(e)).map(Wz) ?? [];
+function nB(e) {
+	return e.items?.contents.filter((e) => e.type === "trait" && Yz(e)).map(iB) ?? [];
 }
-function Uz(e) {
+function rB(e) {
 	Array.isArray(e.items) && (e.items = e.items.filter((e) => {
 		if (typeof e != "object" || !e) return !0;
 		let t = e;
-		return t.type !== "trait" || !Iz(t);
+		return t.type !== "trait" || !Xz(t);
 	}));
 }
-function Wz(e) {
+function iB(e) {
 	return {
-		config: Pz(e),
+		config: Jz(e),
 		img: e.img ?? "",
 		name: e.name,
 		uuid: e.uuid
@@ -19255,7 +19331,7 @@ function Wz(e) {
 }
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/traits/difficulty-options.ts
-var Gz = [
+var aB = [
 	{
 		label: "Very Easy",
 		value: "veasy"
@@ -19293,9 +19369,9 @@ var Gz = [
 		value: "impossible"
 	}
 ];
-async function Kz() {
+async function oB() {
 	let e = Y(game.wfrp4e?.config, ["difficultyLabels"]);
-	if (!J(e)) return Gz;
+	if (!J(e)) return aB;
 	let t = Object.entries(e).filter((e) => {
 		let [t, n] = e;
 		return !!t.trim() && typeof n == "string";
@@ -19303,16 +19379,16 @@ async function Kz() {
 		label: t,
 		value: e
 	}));
-	return t.length ? t : Gz;
+	return t.length ? t : aB;
 }
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/traits/drops.ts
-async function qz(e) {
+async function sB(e) {
 	let t = oE(e);
 	if (t.type !== "Item" || !t.uuid) throw Error("Drop a Foundry Trait item here.");
 	let n = aE(await fromUuid(t.uuid), "trait", "Drop a Foundry Trait item here.");
 	return {
-		config: Pz(n),
+		config: Jz(n),
 		ignored: !1,
 		key: `custom:${n.uuid}`,
 		name: n.name,
@@ -19322,7 +19398,7 @@ async function qz(e) {
 }
 //#endregion
 //#region src/functions/npc-builder/recommended-quick-traits.ts
-var Jz = [
+var cB = [
 	"Armour",
 	"Big",
 	"Brute",
@@ -19348,29 +19424,29 @@ var Jz = [
 ];
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/folders.ts
-async function Yz(e) {
-	return nB(await tB(e, "Actor"));
+async function lB(e) {
+	return gB(await hB(e, "Actor"));
 }
-async function Xz(e) {
-	return nB(await tB(e, "Item"));
+async function uB(e) {
+	return gB(await hB(e, "Item"));
 }
-function Zz() {
-	return game.folders.contents.filter((e) => e.type === "Actor").map(nB).sort((e, t) => e.name.localeCompare(t.name));
+function dB() {
+	return game.folders.contents.filter((e) => e.type === "Actor").map(gB).sort((e, t) => e.name.localeCompare(t.name));
 }
-function Qz() {
-	return game.folders.contents.filter((e) => e.type === "Item").map(nB).sort((e, t) => e.name.localeCompare(t.name));
+function fB() {
+	return game.folders.contents.filter((e) => e.type === "Item").map(gB).sort((e, t) => e.name.localeCompare(t.name));
 }
-function $z(e) {
+function pB(e) {
 	return e ? game.folders.contents.find((t) => t.uuid === e) ?? null : null;
 }
-function eB(e) {
-	let t = $z(e);
+function mB(e) {
+	let t = pB(e);
 	return t?.type === "Item" ? t : null;
 }
-async function tB(e, t) {
+async function hB(e, t) {
 	let n = e.trim();
 	if (!n) throw Error("Enter a folder name first.");
-	let r = game.folders.contents.find((e) => e.type === t && rB(e.name, n));
+	let r = game.folders.contents.find((e) => e.type === t && _B(e.name, n));
 	if (r) return r;
 	let i = await Folder.create({
 		name: n,
@@ -19379,40 +19455,40 @@ async function tB(e, t) {
 	if (!i) throw Error("Foundry did not create the folder.");
 	return i;
 }
-function nB(e) {
+function gB(e) {
 	return {
 		name: e.name,
 		uuid: e.uuid
 	};
 }
-function rB(e, t) {
+function _B(e, t) {
 	return e.trim().toLocaleLowerCase() === t.trim().toLocaleLowerCase();
 }
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/traits/quick-traits.ts
-async function iB(e) {
-	let t = eB(e.quickTraitFolderUuid);
+async function vB(e) {
+	let t = mB(e.quickTraitFolderUuid);
 	if (!t) throw Error("Choose a Quick Traits item folder before importing traits.");
-	let n = new Set(sB(e).map((e) => e.name.trim().toLocaleLowerCase()));
-	for (let e of Jz) {
+	let n = new Set(xB(e).map((e) => e.name.trim().toLocaleLowerCase()));
+	for (let e of cB) {
 		if (n.has(e.trim().toLocaleLowerCase())) continue;
-		let r = az(await uz(e, ["trait"]), e, "trait");
+		let r = gz(await Sz(e, ["trait"]), e, "trait");
 		r.folder = t.id, r.type = "trait", await Item.create(r);
 	}
-	return ui.notifications?.info("Imported recommended quick traits."), await aB(e);
+	return ui.notifications?.info("Imported recommended quick traits."), await yB(e);
 }
-async function aB(e) {
-	return sB(e).map(cB).sort((e, t) => e.name.localeCompare(t.name));
+async function yB(e) {
+	return xB(e).map(SB).sort((e, t) => e.name.localeCompare(t.name));
 }
-function oB(e, t) {
+function bB(e, t) {
 	return t.quickTraitFolderUuid ? e.folder?.uuid === t.quickTraitFolderUuid : !1;
 }
-function sB(e) {
-	return game.items?.contents.filter((t) => t.type === "trait" && oB(t, e)) ?? [];
+function xB(e) {
+	return game.items?.contents.filter((t) => t.type === "trait" && bB(t, e)) ?? [];
 }
-function cB(e) {
+function SB(e) {
 	return {
-		config: Pz(e),
+		config: Jz(e),
 		img: e.img ?? "",
 		name: e.name,
 		uuid: e.uuid
@@ -19420,7 +19496,7 @@ function cB(e) {
 }
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/trappings.ts
-var lB = [
+var CB = [
 	"ammunition",
 	"armour",
 	"container",
@@ -19428,10 +19504,10 @@ var lB = [
 	"trapping",
 	"weapon"
 ];
-async function uB(e, t) {
-	let n = Az();
+async function wB(e, t) {
+	let n = Fz();
 	for (let r of t) {
-		let t = r.source === "base" ? sz(e, r.sourceUuid, r.name) : null;
+		let t = r.source === "base" ? yz(e, r.sourceUuid, r.name) : null;
 		if (r.ignored) {
 			t && n.deletes.push(t.id);
 			continue;
@@ -19443,19 +19519,19 @@ async function uB(e, t) {
 			});
 			continue;
 		}
-		let i = await gB(r), a = r.resolution.selectedItemType || r.itemType || "trapping", o = az(i, r.resolution.selectedName || r.name, a);
+		let i = await AB(r), a = r.resolution.selectedItemType || r.itemType || "trapping", o = gz(i, r.resolution.selectedName || r.name, a);
 		o.type = a || o.type || "trapping", Bl(o, [
 			"system",
 			"quantity",
 			"value"
 		], r.quantity), n.creates.push(o);
 	}
-	await jz(e, n);
+	await Iz(e, n);
 }
-async function dB(e) {
-	return yA(e, await _B());
+async function TB(e) {
+	return yA(e, await jB());
 }
-async function fB(e) {
+async function EB(e) {
 	let t = oE(e);
 	if (t.type !== "Item" || !t.uuid) throw Error("Drop a Foundry Item here.");
 	let n = iE(await fromUuid(t.uuid), "Drop a Foundry Item here.");
@@ -19464,7 +19540,7 @@ async function fB(e) {
 		itemType: n.type,
 		key: `custom:${n.uuid}`,
 		name: n.name,
-		quantity: mB(n),
+		quantity: OB(n),
 		resolution: _A({
 			itemType: n.type,
 			name: n.name,
@@ -19474,23 +19550,23 @@ async function fB(e) {
 		sourceUuid: n.uuid
 	};
 }
-function pB(e) {
-	let t = hB();
+function DB(e) {
+	let t = kB();
 	return e.items?.contents.filter((e) => t.includes(e.type)).map((e) => ({
 		itemType: e.type,
 		name: e.name,
-		quantity: mB(e),
+		quantity: OB(e),
 		uuid: e.uuid
 	})) ?? [];
 }
-function mB(e) {
+function OB(e) {
 	return Il(e.system, [["quantity", "value"], ["quantity"]]) || 1;
 }
-function hB() {
+function kB() {
 	let e = Fl(game.wfrp4e?.config, ["trappingItems"]);
-	return e.length ? e : lB;
+	return e.length ? e : CB;
 }
-async function gB(e) {
+async function AB(e) {
 	if (e.sourceUuid) {
 		let t = await fromUuid(e.sourceUuid);
 		return nE(t) ? t : null;
@@ -19499,25 +19575,25 @@ async function gB(e) {
 		let t = await fromUuid(e.resolution.selectedCandidateUuid);
 		return nE(t) ? t : null;
 	}
-	return e.resolution.status === "fallback" ? null : await uz(e.resolution.selectedName || e.name, hB());
+	return e.resolution.status === "fallback" ? null : await Sz(e.resolution.selectedName || e.name, kB());
 }
-async function _B() {
-	let e = [], t = hB();
-	for (let n of game.items?.contents ?? []) t.includes(n.type) && e.push(yB(n, "World"));
+async function jB() {
+	let e = [], t = kB();
+	for (let n of game.items?.contents ?? []) t.includes(n.type) && e.push(NB(n, "World"));
 	for (let n of game.packs ?? []) {
 		if (!JE(n)) continue;
-		let r = await vB(n, t);
+		let r = await MB(n, t);
 		if (r.length) {
 			e.push(...r);
 			continue;
 		}
 		if (!n.getDocuments) continue;
 		let i = await n.getDocuments();
-		for (let r of i) nE(r) && t.includes(r.type) && e.push(yB(r, n.title ?? "Compendium"));
+		for (let r of i) nE(r) && t.includes(r.type) && e.push(NB(r, n.title ?? "Compendium"));
 	}
 	return e;
 }
-async function vB(e, t) {
+async function MB(e, t) {
 	return e.getIndex ? XE(await e.getIndex({ fields: ["name", "type"] })).filter((n) => !!(n.name && n.type && qE(e, n) && t.includes(n.type))).map((t) => ({
 		itemType: t.type ?? "trapping",
 		name: t.name ?? "",
@@ -19525,7 +19601,7 @@ async function vB(e, t) {
 		uuid: qE(e, t)
 	})) : [];
 }
-function yB(e, t) {
+function NB(e, t) {
 	return {
 		itemType: e.type,
 		name: e.name,
@@ -19535,39 +19611,39 @@ function yB(e, t) {
 }
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/actors.ts
-function bB(e) {
-	return game.actors.contents.filter((t) => EB(t, e)).map(CB);
+function PB(e) {
+	return game.actors.contents.filter((t) => BB(t, e)).map(LB);
 }
-async function xB(e) {
+async function FB(e) {
 	let t = rE(await fromUuid(e));
 	return {
 		advancements: [
-			...wz(t),
-			...Tz(t, "skill"),
-			...Tz(t, "talent")
+			...zz(t),
+			...Bz(t, "skill"),
+			...Bz(t, "talent")
 		],
-		optionalTraits: Hz(t),
-		traits: Vz(t),
-		trappings: pB(t)
+		optionalTraits: nB(t),
+		traits: tB(t),
+		trappings: DB(t)
 	};
 }
-async function SB(e) {
+async function IB(e) {
 	let t = oE(e);
 	if (t.type !== "Actor") throw Error("Drop a Foundry Actor here.");
 	let n = null;
-	return t.uuid ? n = await fromUuid(t.uuid) : t.id && (n = game.actors.get(t.id)), CB(rE(n));
+	return t.uuid ? n = await fromUuid(t.uuid) : t.id && (n = game.actors.get(t.id)), LB(rE(n));
 }
-function CB(e) {
+function LB(e) {
 	return {
 		img: e.img ?? "",
 		name: e.name,
-		prototypeTokenImg: TB(e),
-		species: wB(e),
+		prototypeTokenImg: zB(e),
+		species: RB(e),
 		type: e.type,
 		uuid: e.uuid
 	};
 }
-function wB(e) {
+function RB(e) {
 	return X(e.system, [
 		"details",
 		"species",
@@ -19582,7 +19658,7 @@ function wB(e) {
 		"value"
 	]);
 }
-function TB(e) {
+function zB(e) {
 	return X(e, [
 		"prototypeToken",
 		"texture",
@@ -19593,17 +19669,17 @@ function TB(e) {
 		"src"
 	]);
 }
-function EB(e, t) {
+function BB(e, t) {
 	return t.baseActorFolderUuid ? e.folder?.uuid === t.baseActorFolderUuid : !0;
 }
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/careers.ts
-async function DB(e) {
+async function VB(e) {
 	let t = oE(e);
 	if (t.type !== "Item" || !t.uuid) throw Error("Drop a WFRP Career item here.");
-	return TR(aE(await fromUuid(t.uuid), "career", "Drop a WFRP Career item here."));
+	return IR(aE(await fromUuid(t.uuid), "career", "Drop a WFRP Career item here."));
 }
-async function OB(e) {
+async function HB(e) {
 	let t = [];
 	for (let n of e) {
 		let e = aE(await fromUuid(n.uuid), "career", `Career “${n.name}” is no longer available.`);
@@ -19622,14 +19698,14 @@ async function OB(e) {
 	}
 	return t;
 }
-async function kB(e, t) {
+async function UB(e, t) {
 	t.length && await e.createEmbeddedDocuments("Item", t);
 }
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/magic/constants.ts
-var AB = "spell", jB = new Set(Bk), MB = new Set(Vk);
-async function NB() {
-	return PB().map((e) => ({
+var WB = "spell", GB = new Set(Bk), KB = new Set(Vk);
+async function qB() {
+	return JB().map((e) => ({
 		category: Kk(e.key),
 		key: e.key,
 		label: e.name,
@@ -19637,45 +19713,45 @@ async function NB() {
 		wind: e.wind
 	})).sort((e, t) => e.category === t.category ? e.label.localeCompare(t.label) : e.category.localeCompare(t.category));
 }
-function PB() {
+function JB() {
 	let e = Y(game.wfrp4e?.config, ["magicLores"]), t = Y(game.wfrp4e?.config, ["magicWind"]), n = [];
-	if (!J(e)) return [RB()];
+	if (!J(e)) return [QB()];
 	for (let [r, i] of Object.entries(e)) {
-		let e = GB(i) || r, a = WB(t, r);
+		let e = aV(i) || r, a = iV(t, r);
 		n.push({
 			key: r,
-			matchTerms: UB(r, e, a),
+			matchTerms: rV(r, e, a),
 			name: e,
 			wind: a
 		});
 	}
-	return n.some((e) => e.key === "petty") || n.push(RB()), n;
+	return n.some((e) => e.key === "petty") || n.push(QB()), n;
 }
-function FB(e, t) {
+function YB(e, t) {
 	let n = /* @__PURE__ */ new Map();
 	for (let r of e) {
 		if (r.isAmbiguous) continue;
 		if (r.kind === "petty-magic") {
-			let e = HB("petty magic", t);
+			let e = nV("petty magic", t);
 			e && n.set(e.key, e);
 			continue;
 		}
-		let e = HB(r.rawLore, t);
+		let e = nV(r.rawLore, t);
 		e && n.set(e.key, e);
 	}
 	return [...n.values()];
 }
-function IB(e, t) {
-	let n = [...LB(e.system), VB(e.name)].filter(Boolean);
+function XB(e, t) {
+	let n = [...ZB(e.system), tV(e.name)].filter(Boolean);
 	for (let e of n) {
-		let n = BB(e, t);
+		let n = eV(e, t);
 		if (n) return n;
-		let r = HB(e, t);
+		let r = nV(e, t);
 		if (r) return r;
 	}
 	return null;
 }
-function LB(e) {
+function ZB(e) {
 	return [
 		...zl(Y(e, ["lore", "value"])),
 		...zl(Y(e, ["lore"])),
@@ -19692,7 +19768,7 @@ function LB(e) {
 		...zl(Y(e, ["system.lore"]))
 	];
 }
-function RB() {
+function QB() {
 	return {
 		key: "petty",
 		matchTerms: ["petty", "petty magic"],
@@ -19700,7 +19776,7 @@ function RB() {
 		wind: ""
 	};
 }
-function zB(e) {
+function $B(e) {
 	let t = e.trim() || "Unknown Lore";
 	return {
 		key: Uk(t) || "unknown",
@@ -19709,18 +19785,18 @@ function zB(e) {
 		wind: ""
 	};
 }
-function BB(e, t) {
+function eV(e, t) {
 	let n = Uk(e);
-	return n === "lore" ? t.find((e) => e.key !== "petty") ?? null : n === "the eight winds" || n === "eight winds" ? t.find((e) => jB.has(e.key)) ?? null : n === "dark lore" ? t.find((e) => MB.has(e.key)) ?? null : null;
+	return n === "lore" ? t.find((e) => e.key !== "petty") ?? null : n === "the eight winds" || n === "eight winds" ? t.find((e) => GB.has(e.key)) ?? null : n === "dark lore" ? t.find((e) => KB.has(e.key)) ?? null : null;
 }
-function VB(e) {
+function tV(e) {
 	return /\(([^)]+)\)\s*$/.exec(e)?.[1]?.trim() ?? "";
 }
-function HB(e, t) {
+function nV(e, t) {
 	let n = Uk(e);
 	return n ? t.find((e) => e.matchTerms.some((e) => Uk(e) === n)) ?? null : null;
 }
-function UB(e, t, n) {
+function rV(e, t, n) {
 	let r = /* @__PURE__ */ new Set(), i = Uk(e), a = Uk(t);
 	for (let i of [
 		e,
@@ -19729,26 +19805,26 @@ function UB(e, t, n) {
 	]) i.trim() && r.add(i.trim());
 	return (i === "petty" || a === "petty") && r.add("Petty Magic"), (i === "shadow" || a === "shadow") && r.add("Shadows"), t && !/^lore of /i.test(t) && r.add(`Lore of ${t}`), [...r];
 }
-function WB(e, t) {
-	return J(e) ? GB(e[t]) : "";
+function iV(e, t) {
+	return J(e) ? aV(e[t]) : "";
 }
-function GB(e) {
+function aV(e) {
 	return typeof e == "string" ? e.trim() : J(e) ? X(e, ["name"]) || X(e, ["label"]) || X(e, ["value"]) : "";
 }
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/magic/debug.ts
-var KB = "[WFRP Customizer Apps][Spell Lookup]";
-function qB(t, n) {
+var oV = "[WFRP Customizer Apps][Spell Lookup]";
+function sV(t, n) {
 	if (n) {
-		e(`${KB} ${t}`, n);
+		e(`${oV} ${t}`, n);
 		return;
 	}
-	e(`${KB} ${t}`);
+	e(`${oV} ${t}`);
 }
-function JB(e, n) {
-	t(`${KB} ${e}`, n);
+function cV(e, n) {
+	t(`${oV} ${e}`, n);
 }
-function YB(e) {
+function lV(e) {
 	return [
 		e.title ?? "",
 		e.collection ?? "",
@@ -19757,22 +19833,22 @@ function YB(e) {
 		e.documentName
 	].filter(Boolean).join(" | ");
 }
-function XB(e) {
+function uV(e) {
 	return {
-		loreTerms: LB(e.system),
+		loreTerms: ZB(e.system),
 		name: e.name,
 		sourceLabel: e.sourceLabel,
 		uuid: e.uuid
 	};
 }
-function ZB(e) {
+function dV(e) {
 	return typeof e == "string" ? {
 		kind: "uuid-string",
 		value: e
 	} : J(e) ? {
 		documentName: X(e, ["documentName"]),
 		hasSystem: J(Y(e, ["system"])),
-		loreTerms: LB(Y(e, ["system"])),
+		loreTerms: ZB(Y(e, ["system"])),
 		name: X(e, ["name"]),
 		type: X(e, ["type"]),
 		uuid: X(e, ["uuid"])
@@ -19780,7 +19856,7 @@ function ZB(e) {
 }
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/magic/spell-input-conversion.ts
-function QB(e, t) {
+function fV(e, t) {
 	return {
 		img: e.img ?? "",
 		name: e.name,
@@ -19789,66 +19865,66 @@ function QB(e, t) {
 		uuid: e.uuid
 	};
 }
-function $B(e) {
-	return /^item\./i.test(e.uuid) ? "World" : eV(e.uuid, "WFRP Item Lookup");
+function pV(e) {
+	return /^item\./i.test(e.uuid) ? "World" : mV(e.uuid, "WFRP Item Lookup");
 }
-function eV(e, t) {
+function mV(e, t) {
 	let n = /^Compendium\.([^.]+\.[^.]+)\./.exec(e)?.[1];
 	return n ? [...game.packs ?? []].find((e) => e.collection === n)?.title ?? n : t;
 }
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/magic/compendium-spell-inputs.ts
-async function tV(e) {
-	if (qB("Compendium index scan start", { pack: YB(e) }), !e.getIndex) return qB("Compendium has no index; loading documents", { pack: YB(e) }), await iV(e);
+async function hV(e) {
+	if (sV("Compendium index scan start", { pack: lV(e) }), !e.getIndex) return sV("Compendium has no index; loading documents", { pack: lV(e) }), await vV(e);
 	let t = XE(await e.getIndex({ fields: [
 		"name",
 		"type",
 		"img",
 		"system.lore.value"
 	] }));
-	if (qB("Compendium index loaded", {
+	if (sV("Compendium index loaded", {
 		entries: t.length,
-		pack: YB(e),
+		pack: lV(e),
 		samples: t.slice(0, 5).map((t) => ({
-			hasLoreTerms: LB(t).length > 0,
+			hasLoreTerms: ZB(t).length > 0,
 			name: t.name,
 			type: t.type,
 			uuid: qE(e, t)
 		}))
-	}), !t.length) return qB("Compendium index empty; loading documents", { pack: YB(e) }), await iV(e);
-	let n = t.filter(rV);
-	qB("Compendium index spell candidates", {
-		pack: YB(e),
+	}), !t.length) return sV("Compendium index empty; loading documents", { pack: lV(e) }), await vV(e);
+	let n = t.filter(_V);
+	sV("Compendium index spell candidates", {
+		pack: lV(e),
 		spellEntries: n.length
 	});
-	let r = n.filter((e) => e.name).map((t) => oV(e, t));
-	return r.length || !aV(e) ? r : await iV(e);
+	let r = n.filter((e) => e.name).map((t) => bV(e, t));
+	return r.length || !yV(e) ? r : await vV(e);
 }
-function nV(e) {
+function gV(e) {
 	return JE(e);
 }
-function rV(e) {
-	return e.type === "spell" ? !0 : !!(e.name && (LB(e).length || VB(e.name)));
+function _V(e) {
+	return e.type === "spell" ? !0 : !!(e.name && (ZB(e).length || tV(e.name)));
 }
-async function iV(e) {
-	if (!e.getDocuments) return qB("Compendium has no document loader", { pack: YB(e) }), [];
-	qB("Compendium document load start", { pack: YB(e) });
+async function vV(e) {
+	if (!e.getDocuments) return sV("Compendium has no document loader", { pack: lV(e) }), [];
+	sV("Compendium document load start", { pack: lV(e) });
 	let t = await e.getDocuments(), n = t.filter((e) => nE(e) && e.type === "spell");
-	return qB("Compendium document load complete", {
+	return sV("Compendium document load complete", {
 		documents: t.length,
-		pack: YB(e),
+		pack: lV(e),
 		spellDocuments: n.length,
 		spellSamples: n.slice(0, 5).map((e) => ({
-			loreTerms: LB(e.system),
+			loreTerms: ZB(e.system),
 			name: e.name,
 			uuid: e.uuid
 		}))
-	}), n.map((t) => QB(t, e.title ?? "Compendium"));
+	}), n.map((t) => fV(t, e.title ?? "Compendium"));
 }
-function aV(e) {
+function yV(e) {
 	return e.collection === "wfrp4e-core.items" || e.collection === "wfrp4e-wom.items";
 }
-function oV(e, t) {
+function bV(e, t) {
 	return {
 		img: t.img ?? t.thumb ?? "",
 		name: t.name ?? "",
@@ -19859,36 +19935,36 @@ function oV(e, t) {
 }
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/magic/warhammer-spell-inputs.ts
-async function sV() {
-	let e = lV();
-	if (!e) return qB("WFRP helper unavailable"), [];
+async function xV() {
+	let e = CV();
+	if (!e) return sV("WFRP helper unavailable"), [];
 	try {
-		let t = await e.findAllItems(AB, "Loading Spells", !0, ["system.lore.value"]);
-		return qB("WFRP helper raw result", {
+		let t = await e.findAllItems(WB, "Loading Spells", !0, ["system.lore.value"]);
+		return sV("WFRP helper raw result", {
 			count: t.length,
-			samples: t.slice(0, 10).map(ZB)
-		}), (await Promise.all(t.map((e) => cV(e)))).filter((e) => e !== null);
+			samples: t.slice(0, 10).map(dV)
+		}), (await Promise.all(t.map((e) => SV(e)))).filter((e) => e !== null);
 	} catch (e) {
-		return JB("WFRP helper lookup failed.", e), [];
+		return cV("WFRP helper lookup failed.", e), [];
 	}
 }
-async function cV(e) {
+async function SV(e) {
 	if (typeof e == "string") {
 		let t = await fromUuid(e);
-		return nE(t) && t.type === "spell" ? QB(t, $B(t)) : null;
+		return nE(t) && t.type === "spell" ? fV(t, pV(t)) : null;
 	}
-	if (nE(e)) return e.type === "spell" ? QB(e, $B(e)) : null;
+	if (nE(e)) return e.type === "spell" ? fV(e, pV(e)) : null;
 	if (X(e, ["type"]) !== "spell") return null;
 	let t = X(e, ["name"]);
 	return t ? {
 		img: X(e, ["img"]) || X(e, ["thumb"]),
 		name: t,
-		sourceLabel: eV(X(e, ["uuid"]), "WFRP Item Lookup"),
+		sourceLabel: mV(X(e, ["uuid"]), "WFRP Item Lookup"),
 		system: Y(e, ["system"]),
 		uuid: X(e, ["uuid"])
 	} : null;
 }
-function lV() {
+function CV() {
 	let e = Y(globalThis, [
 		"warhammer",
 		"utility",
@@ -19898,41 +19974,41 @@ function lV() {
 }
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/magic/spell-resolution-inputs.ts
-async function uV() {
+async function wV() {
 	let e = [], n = [...game.packs ?? []];
-	qB("Candidate lookup start", {
-		itemPacks: n.filter(nV).length,
+	sV("Candidate lookup start", {
+		itemPacks: n.filter(gV).length,
 		totalPacks: n.length,
-		warhammerUtilityAvailable: !!pV(),
+		warhammerUtilityAvailable: !!DV(),
 		worldItems: game.items?.contents.length ?? 0
 	});
-	let r = await sV();
-	qB("WFRP helper lookup complete", {
+	let r = await xV();
+	sV("WFRP helper lookup complete", {
 		utilityInputs: r.length,
-		utilitySamples: r.slice(0, 10).map(XB)
-	}), e.push(...r), e.push(...dV()), qB("World spell scan complete", { worldSpellCount: e.filter((e) => e.sourceLabel === "World").length });
-	for (let r of n) if (nV(r)) try {
-		let t = await tV(r);
-		e.push(...t), qB("Compendium spell scan complete", {
+		utilitySamples: r.slice(0, 10).map(uV)
+	}), e.push(...r), e.push(...TV()), sV("World spell scan complete", { worldSpellCount: e.filter((e) => e.sourceLabel === "World").length });
+	for (let r of n) if (gV(r)) try {
+		let t = await hV(r);
+		e.push(...t), sV("Compendium spell scan complete", {
 			inputCount: t.length,
-			pack: YB(r),
-			samples: t.slice(0, 5).map(XB)
+			pack: lV(r),
+			samples: t.slice(0, 5).map(uV)
 		});
 	} catch (e) {
 		t(`wfrp4e-customizer-apps | Spell lookup skipped compendium "${r.title ?? r.collection ?? "unknown"}".`, e);
 	}
-	let i = fV(e);
-	return qB("Candidate lookup complete", {
+	let i = EV(e);
+	return sV("Candidate lookup complete", {
 		rawInputCount: e.length,
 		uniqueInputCount: i.length
 	}), i;
 }
-function dV() {
+function TV() {
 	let e = [];
-	for (let t of game.items?.contents ?? []) t.type === "spell" && e.push(QB(t, "World"));
+	for (let t of game.items?.contents ?? []) t.type === "spell" && e.push(fV(t, "World"));
 	return e;
 }
-function fV(e) {
+function EV(e) {
 	let t = /* @__PURE__ */ new Map();
 	for (let n of e) {
 		let e = n.uuid || n.name.trim().toLocaleLowerCase();
@@ -19940,7 +20016,7 @@ function fV(e) {
 	}
 	return [...t.values()];
 }
-function pV() {
+function DV() {
 	return Y(globalThis, [
 		"warhammer",
 		"utility",
@@ -19949,18 +20025,18 @@ function pV() {
 }
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/magic/index.ts
-async function mV(e, t) {
+async function OV(e, t) {
 	let n = [];
 	for (let r of t) {
-		if (!r.selected || oz(e, r.name, "spell")) continue;
-		let t = az(r.sourceUuid ? await _V(r.sourceUuid) : null, r.name, AB);
-		t.type = AB, n.push(t);
+		if (!r.selected || _z(e, r.name, "spell")) continue;
+		let t = gz(r.sourceUuid ? await jV(r.sourceUuid) : null, r.name, WB);
+		t.type = WB, n.push(t);
 	}
 	n.length && await e.createEmbeddedDocuments("Item", n);
 }
-async function hV(e) {
-	let t = FB(e, PB());
-	if (qB("Grant resolution start", {
+async function kV(e) {
+	let t = YB(e, JB());
+	if (sV("Grant resolution start", {
 		grants: e.map((e) => ({
 			isAmbiguous: e.isAmbiguous,
 			kind: e.kind,
@@ -19974,12 +20050,12 @@ async function hV(e) {
 			wind: e.wind
 		}))
 	}), !t.length) return [];
-	let n = await uV(), r = /* @__PURE__ */ new Map(), i = [];
+	let n = await wV(), r = /* @__PURE__ */ new Map(), i = [];
 	for (let e of n) {
-		let n = IB(e, t);
+		let n = XB(e, t);
 		if (!n) {
 			i.length < 20 && i.push({
-				loreTerms: LB(e.system),
+				loreTerms: ZB(e.system),
 				name: e.name,
 				sourceLabel: e.sourceLabel,
 				uuid: e.uuid
@@ -19999,7 +20075,7 @@ async function hV(e) {
 			sourceUuid: e.uuid
 		});
 	}
-	return qB("Grant resolution complete", {
+	return sV("Grant resolution complete", {
 		candidateCount: n.length,
 		matchedSpellCount: r.size,
 		matchedSpellSamples: [...r.values()].slice(0, 10).map((e) => ({
@@ -20011,10 +20087,10 @@ async function hV(e) {
 		unmatchedLoreSamples: i
 	}), [...r.values()].sort((e, t) => e.loreName === t.loreName ? e.name.localeCompare(t.name) : e.loreName.localeCompare(t.loreName));
 }
-async function gV(e) {
+async function AV(e) {
 	let t = oE(e);
 	if (t.type !== "Item" || !t.uuid) throw Error("Drop a Foundry Spell item here.");
-	let n = aE(await fromUuid(t.uuid), AB, "Drop a Foundry Spell item here."), r = IB(QB(n, "Dropped"), [...PB(), RB()]) ?? zB(LB(n.system)[0] ?? "");
+	let n = aE(await fromUuid(t.uuid), WB, "Drop a Foundry Spell item here."), r = XB(fV(n, "Dropped"), [...JB(), QB()]) ?? $B(ZB(n.system)[0] ?? "");
 	return {
 		img: n.img ?? "",
 		key: `custom:${n.uuid}`,
@@ -20027,58 +20103,58 @@ async function gV(e) {
 		sourceUuid: n.uuid
 	};
 }
-async function _V(e) {
+async function jV(e) {
 	let t = await fromUuid(e);
 	return nE(t) && t.type === "spell" ? t : null;
 }
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/build-npc.ts
-async function vV(e) {
-	let t = await OB(e.careers), n = await bV(e);
+async function MV(e) {
+	let t = await HB(e.careers), n = await PV(e);
 	if (!n) throw Error("Foundry did not create the NPC Actor.");
-	let r = xV(e), i = e.careers.at(-1), a = {
+	let r = FV(e), i = e.careers.at(-1), a = {
 		name: r,
 		"prototypeToken.name": r
 	}, o = X(n.system, [
 		"details",
 		"gmnotes",
 		"value"
-	]), s = yV(o);
+	]), s = NV(o);
 	s !== o && (a["system.details.gmnotes.value"] = s);
 	let c = e.portraitPath || i?.img || "";
-	return c && (a.img = c, a["prototypeToken.texture.src"] = c), await n.update(a), await kB(n, t), await Cz(n, e.advancements), await zz(n, e.traits), await uB(n, e.trappings), await mV(n, e.spells), n.sheet?.render(!0), ui.notifications?.info(`Created NPC "${r}".`), {
+	return c && (a.img = c, a["prototypeToken.texture.src"] = c), await n.update(a), await UB(n, t), await Rz(n, e.advancements), await $z(n, e.traits), await wB(n, e.trappings), await OV(n, e.spells), n.sheet?.render(!0), ui.notifications?.info(`Created NPC "${r}".`), {
 		name: r,
 		uuid: n.uuid
 	};
 }
-function yV(e) {
+function NV(e) {
 	return e.replaceAll(/(?:<hr\s*\/?>)?<section data-wfrp-customizer-npc-xp="true">[\S\s]*?<\/section>/g, "").trim();
 }
-async function bV(e) {
-	let t = rE(await fromUuid(e.baseActorUuid)).toObject(), n = $z(e.settings.outputActorFolderUuid);
-	return delete t._id, delete t.folder, t.type = "npc", Uz(t), n && (t.folder = n.id), await Actor.create(t);
+async function PV(e) {
+	let t = rE(await fromUuid(e.baseActorUuid)).toObject(), n = pB(e.settings.outputActorFolderUuid);
+	return delete t._id, delete t.folder, t.type = "npc", rB(t), n && (t.folder = n.id), await Actor.create(t);
 }
-function xV(e) {
+function FV(e) {
 	if (!e.settings.includeSpeciesInName) return e.actorName;
-	let t = game.actors.contents.find((t) => t.uuid === e.baseActorUuid), n = t ? wB(t) : "";
+	let t = game.actors.contents.find((t) => t.uuid === e.baseActorUuid), n = t ? RB(t) : "";
 	return !n || e.actorName.toLocaleLowerCase().includes(n.toLocaleLowerCase()) ? e.actorName : `${n} ${e.actorName}`;
 }
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/portraits/candidate-utils.ts
-function SV(e, t) {
+function IV(e, t) {
 	let n = t.img.trim().toLocaleLowerCase();
 	!n || e.seenPaths.has(n) || (e.seenPaths.add(n), e.candidates.push(t));
 }
-function CV(e, t) {
+function LV(e, t) {
 	let n = t.imagePaths.filter(({ path: e }) => !!e);
-	if (AV(t.name, n, e.searchTerms)) for (let r of n) SV(e, {
+	if (WV(t.name, n, e.searchTerms)) for (let r of n) IV(e, {
 		img: r.path,
 		key: `foundry-asset:${t.sourceKey}:${r.label}`,
-		label: `${t.name || DV(r.path)} ${r.label} (${t.sourceLabel})`,
+		label: `${t.name || VV(r.path)} ${r.label} (${t.sourceLabel})`,
 		source: "foundry-asset"
 	});
 }
-function wV(e, t, n) {
+function RV(e, t, n) {
 	e?.({
 		candidatesFound: t.candidates.length,
 		currentLocation: n.currentLocation,
@@ -20087,7 +20163,7 @@ function wV(e, t, n) {
 		phase: n.phase
 	});
 }
-function TV(e) {
+function zV(e) {
 	return X(e, [
 		"prototypeToken",
 		"texture",
@@ -20098,49 +20174,49 @@ function TV(e) {
 		"src"
 	]);
 }
-function EV(e, t) {
-	return `${DV(e)} (${t})`;
+function BV(e, t) {
+	return `${VV(e)} (${t})`;
 }
-function DV(e) {
+function VV(e) {
 	return e.split(/[/\\]/).at(-1) ?? e;
 }
-function OV(e) {
+function HV(e) {
 	return typeof e == "object" && !!e;
 }
-function kV(e) {
-	return OV(e) && Object.values(e).every((e) => Array.isArray(e) && e.every((e) => typeof e == "string"));
+function UV(e) {
+	return HV(e) && Object.values(e).every((e) => Array.isArray(e) && e.every((e) => typeof e == "string"));
 }
-function AV(e, t, n) {
-	return vP(e, n) || t.some(({ path: e }) => vP(e, n));
+function WV(e, t, n) {
+	return wP(e, n) || t.some(({ path: e }) => wP(e, n));
 }
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/portraits/dig-down.ts
-var jV = "fuzzy-foundry", MV = .3, NV = new Set([
+var GV = "fuzzy-foundry", KV = .3, qV = new Set([
 	".webp",
 	".png",
 	".jpg",
 	".jpeg",
 	".gif"
 ]);
-function PV(e, t) {
-	let n = FV();
-	if (wV(t, e, {
-		currentLocation: LV(n),
+function JV(e, t) {
+	let n = YV();
+	if (RV(t, e, {
+		currentLocation: ZV(n),
 		maxDirectories: 0,
 		phase: "filesystem"
 	}), !n.digDownActive || !n.digDownCacheReady) return;
-	let r = BV();
+	let r = eH();
 	if (!(!r?._fileIndexCache || !r.fs)) {
-		for (let t of RV(r, e.searchTerms)) zV(e, r, t);
-		wV(t, e, {
+		for (let t of QV(r, e.searchTerms)) $V(e, r, t);
+		RV(t, e, {
 			currentLocation: "Dig Down file cache search complete",
 			maxDirectories: 0,
 			phase: "filesystem"
 		});
 	}
 }
-function FV() {
-	let e = game.modules.get(jV)?.active === !0, t = IV(), n = BV(), r = Object.values(n?._fileIndexCache ?? {}).reduce((e, t) => e + t.length, 0);
+function YV() {
+	let e = game.modules.get(GV)?.active === !0, t = XV(), n = eH(), r = Object.values(n?._fileIndexCache ?? {}).reduce((e, t) => e + t.length, 0);
 	return {
 		digDownActive: e,
 		digDownCacheReady: !!(n?._fileIndexCache && n.fs),
@@ -20148,66 +20224,66 @@ function FV() {
 		digDownIndexedFileCount: r
 	};
 }
-function IV() {
+function XV() {
 	try {
-		return game.settings.get(jV, "deepFile") === !0;
+		return game.settings.get(GV, "deepFile") === !0;
 	} catch {
 		return !1;
 	}
 }
-function LV(e) {
+function ZV(e) {
 	return e.digDownActive ? e.digDownDeepFileSearchEnabled ? e.digDownCacheReady ? `Dig Down file cache (${e.digDownIndexedFileCount} files)` : "Waiting for Dig Down file cache" : "Dig Down Deep File Search is disabled" : "Dig Down is not active";
 }
-function RV(e, t) {
+function QV(e, t) {
 	let n = /* @__PURE__ */ new Set(), r = Object.keys(e._fileIndexCache ?? {});
 	for (let i of t) {
 		let t = i.toLocaleLowerCase();
 		for (let e of r) e.toLocaleLowerCase().includes(t) && n.add(e);
-		let a = e.fs?.get(i, [], MV) ?? [];
+		let a = e.fs?.get(i, [], KV) ?? [];
 		for (let [, e] of a) n.add(e);
 	}
 	return [...n].sort((e, t) => e.toLocaleLowerCase().localeCompare(t.toLocaleLowerCase()));
 }
-function zV(e, t, n) {
+function $V(e, t, n) {
 	let r = t._fileIndexCache?.[n] ?? [];
-	for (let t of r) VV(t) && SV(e, {
+	for (let t of r) tH(t) && IV(e, {
 		img: t,
 		key: `foundry-asset:${t}`,
-		label: EV(t, "Dig Down"),
+		label: BV(t, "Dig Down"),
 		source: "foundry-asset"
 	});
 }
-function BV() {
+function eH() {
 	let e = canvas.deepSearchCache;
-	if (!OV(e)) return null;
+	if (!HV(e)) return null;
 	let t = e._fileIndexCache, n = e.fs, r = {};
-	return kV(t) && (r._fileIndexCache = t), OV(n) && typeof n.get == "function" && (r.fs = { get: n.get.bind(n) }), r;
+	return UV(t) && (r._fileIndexCache = t), HV(n) && typeof n.get == "function" && (r.fs = { get: n.get.bind(n) }), r;
 }
-function VV(e) {
+function tH(e) {
 	let t = `.${e.split(/[#?]/)[0]?.split(".").pop() ?? ""}`;
-	return NV.has(t.toLocaleLowerCase());
+	return qV.has(t.toLocaleLowerCase());
 }
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/portraits/documents.ts
-function HV(e, t) {
-	wV(t, e, {
+function nH(e, t) {
+	RV(t, e, {
 		currentLocation: "World Actors and Items",
 		maxDirectories: 0,
 		phase: "world-documents"
 	});
-	for (let t of game.actors.contents) CV(e, {
+	for (let t of game.actors.contents) LV(e, {
 		imagePaths: [{
 			label: "actor image",
 			path: t.img ?? ""
 		}, {
 			label: "token image",
-			path: TV(t)
+			path: zV(t)
 		}],
 		name: t.name,
 		sourceLabel: "World Actors",
 		sourceKey: t.uuid
 	});
-	for (let t of game.items?.contents ?? []) CV(e, {
+	for (let t of game.items?.contents ?? []) LV(e, {
 		imagePaths: [{
 			label: "item image",
 			path: t.img ?? ""
@@ -20217,8 +20293,8 @@ function HV(e, t) {
 		sourceKey: t.uuid
 	});
 }
-async function UV(e, t) {
-	wV(t, e, {
+async function rH(e, t) {
+	RV(t, e, {
 		currentLocation: "Actor and Item compendiums",
 		maxDirectories: 0,
 		phase: "compendiums"
@@ -20231,7 +20307,7 @@ async function UV(e, t) {
 			"thumb",
 			"prototypeToken.texture.src"
 		] }).catch(() => void 0), r = n ? XE(n) : [];
-		for (let n of r) CV(e, {
+		for (let n of r) LV(e, {
 			imagePaths: [
 				{
 					label: `${t.documentName.toLocaleLowerCase()} image`,
@@ -20258,7 +20334,7 @@ async function UV(e, t) {
 }
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/portraits/index.ts
-async function WV(e, t) {
+async function iH(e, t) {
 	if (!e.searchTerms.length) return [];
 	let n = {
 		candidates: [],
@@ -20267,7 +20343,7 @@ async function WV(e, t) {
 		seenPaths: /* @__PURE__ */ new Set(),
 		visitedDirectories: 0
 	};
-	return e.includeCompendiumAssets && (HV(n, t), await UV(n, t)), e.includeFilePickerAssets && PV(n, t), wV(t, n, {
+	return e.includeCompendiumAssets && (nH(n, t), await rH(n, t)), e.includeFilePickerAssets && JV(n, t), RV(t, n, {
 		currentLocation: "Portrait search complete",
 		maxDirectories: n.maxDirectoryBudget,
 		phase: "ready"
@@ -20275,34 +20351,34 @@ async function WV(e, t) {
 }
 //#endregion
 //#region src/module/apps/npc-builder/foundry-bridge/index.ts
-var GV = {
-	buildNpc: vV,
-	ensureActorFolder: Yz,
-	ensureItemFolder: Xz,
-	findLowerCareerCandidates: NR,
-	getPortraitSearchAvailability: async () => FV(),
-	importRecommendedQuickTraits: iB,
-	listActorFolders: async () => Zz(),
-	listBaseActors: async (e) => bB(e),
-	listFoundryPortraitCandidates: WV,
-	listMagicLoreOptions: NB,
-	listSpellsForMagicGrants: hV,
-	listItemFolders: async () => Qz(),
-	listQuickTraits: aB,
-	listSkillCharacteristics: YR,
-	listSkillSpecializations: JR,
-	listTalentMaximums: dz,
-	listTraitDifficultyOptions: Kz,
-	loadBaseActorDraftData: xB,
-	loadSettings: async () => xz(),
-	resolveActorDrop: SB,
-	resolveCareerDrop: DB,
-	resolveSpellDrop: gV,
-	resolveTraitDrop: qz,
-	resolveTrapping: dB,
-	resolveTrappingDrop: fB,
-	saveSettings: Sz
-}, KV = class extends Mw {
+var aH = {
+	buildNpc: MV,
+	ensureActorFolder: lB,
+	ensureItemFolder: uB,
+	findLowerCareerCandidates: WR,
+	getPortraitSearchAvailability: async () => YV(),
+	importRecommendedQuickTraits: vB,
+	listActorFolders: async () => dB(),
+	listBaseActors: async (e) => PB(e),
+	listFoundryPortraitCandidates: iH,
+	listMagicLoreOptions: qB,
+	listSpellsForMagicGrants: kV,
+	listItemFolders: async () => fB(),
+	listQuickTraits: yB,
+	listSkillCharacteristics: oz,
+	listSkillSpecializations: az,
+	listTalentMaximums: Cz,
+	listTraitDifficultyOptions: oB,
+	loadBaseActorDraftData: FB,
+	loadSettings: async () => Nz(),
+	resolveActorDrop: IB,
+	resolveCareerDrop: VB,
+	resolveSpellDrop: AV,
+	resolveTraitDrop: sB,
+	resolveTrapping: TB,
+	resolveTrappingDrop: EB,
+	saveSettings: Pz
+}, oH = class extends Mw {
 	static DEFAULT_OPTIONS = {
 		...super.DEFAULT_OPTIONS,
 		id: `${$}-npc-builder`,
@@ -20318,167 +20394,112 @@ var GV = {
 		}
 	};
 	getVueComponent() {
-		return _R;
+		return OR;
 	}
 	getVueProps() {
-		return { bridge: GV };
+		return { bridge: aH };
 	}
-}, qV = "wfrp4e-customizer-open-npc-builder", JV = "wfrp4e-customizer-open-species-builder";
-function YV() {
+}, sH = "wfrp4e-customizer-open-npc-builder", cH = "wfrp4e-customizer-open-species-builder";
+function lH() {
 	Hooks.on("renderActorDirectory", (e, t) => {
-		let n = eH(t);
-		n && XV(n);
+		let n = mH(t);
+		n && uH(n);
 	});
 }
-function XV(e) {
-	let n = $V(e);
+function uH(e) {
+	let n = pH(e);
 	if (!n) {
 		t("wfrp4e-customizer-apps | Could not find Actor Directory button container.");
 		return;
 	}
-	ZV(e, n), QV(e, n);
+	dH(e, n), fH(e, n);
 }
-function ZV(e, t) {
-	if (e.querySelector(`.${qV}`)) return;
+function dH(e, t) {
+	if (e.querySelector(`.${sH}`)) return;
 	let n = document.createElement("button");
-	n.classList.add(qV, "wfrp4e-customizer-actor-directory-button"), n.type = "button", n.innerHTML = "<i class=\"fa-solid fa-user-plus\" inert></i><span>NPC Builder App</span>", n.addEventListener("click", () => {
-		new KV().render(!0);
+	n.classList.add(sH, "wfrp4e-customizer-actor-directory-button"), n.type = "button", n.innerHTML = "<i class=\"fa-solid fa-user-plus\" inert></i><span>NPC Builder App</span>", n.addEventListener("click", () => {
+		new oH().render(!0);
 	}), t.append(n);
 }
-function QV(e, t) {
-	if (e.querySelector(`.${JV}`)) return;
+function fH(e, t) {
+	if (e.querySelector(`.${cH}`)) return;
 	let n = document.createElement("button");
-	n.classList.add(JV, "wfrp4e-customizer-actor-directory-button"), n.type = "button", n.innerHTML = "<i class=\"fa-solid fa-people-group\" inert></i><span>Species Builder</span>", n.addEventListener("click", () => {
+	n.classList.add(cH, "wfrp4e-customizer-actor-directory-button"), n.type = "button", n.innerHTML = "<i class=\"fa-solid fa-people-group\" inert></i><span>Species Builder</span>", n.addEventListener("click", () => {
 		new gO().render(!0);
 	}), t.append(n);
 }
-function $V(e) {
+function pH(e) {
 	return e.querySelector(".directory-header .header-actions") ?? e.querySelector(".directory-header .action-buttons") ?? e.querySelector(".header-actions") ?? e.querySelector(".action-buttons");
 }
-function eH(e) {
-	return e instanceof HTMLElement ? e : tH(e) && e[0] instanceof HTMLElement ? e[0] : null;
+function mH(e) {
+	return e instanceof HTMLElement ? e : hH(e) && e[0] instanceof HTMLElement ? e[0] : null;
 }
-function tH(e) {
+function hH(e) {
 	return typeof e == "object" && !!e && "length" in e;
 }
 //#endregion
 //#region src/module/apps/npc-builder/estimated-xp/actor-profile.ts
-function nH(e) {
-	let t = {};
-	for (let n of Object.keys(Oc)) {
-		let r = n;
-		t[r] = oH(e, r);
+function gH(e) {
+	let t = e.toObject(), n = {};
+	for (let e of Object.keys(Oc)) {
+		let r = e;
+		n[r] = Lz(t.system, r);
 	}
 	return {
-		characteristics: t,
-		skills: rH(e, "skill"),
-		talents: rH(e, "talent")
+		characteristics: n,
+		skills: _H(e, "skill"),
+		talents: _H(e, "talent")
 	};
 }
-function rH(e, t) {
-	return e.items?.contents.filter((e) => e.type === t).map((n) => ({
-		name: n.name,
-		value: t === "skill" ? iH(e, n) : aH(n)
+function _H(e, t) {
+	return e.items?.contents.filter((e) => e.type === t).map((e) => ({
+		name: e.name,
+		value: t === "skill" ? vH(e.toObject().system) : yH(e.toObject().system)
 	})) ?? [];
 }
-function iH(e, t) {
-	let n = X(t.system, ["characteristic", "value"]), r = Ll(t.system, [["total", "value"], ["total"]]);
-	return r !== null && Ac(n) ? r - oH(e, n) : Il(t.system, [["advances", "value"], ["advances"]]) + Il(t.system, [["modifier", "value"], ["modifier"]]);
+function vH(e) {
+	return Il(e, [["advances", "value"], ["advances"]]) + Il(e, [["modifier", "value"], ["modifier"]]);
 }
-function aH(e) {
-	return Il(e.system, [["advances", "value"], ["advances"]]);
-}
-function oH(e, t) {
-	let n = Ll(e.system, [
-		[
-			"characteristics",
-			t,
-			"value",
-			"value"
-		],
-		[
-			"characteristics",
-			t,
-			"value"
-		],
-		[
-			"characteristics",
-			t,
-			"total",
-			"value"
-		],
-		[
-			"characteristics",
-			t,
-			"total"
-		]
-	]);
-	return n === null ? Il(e.system, [[
-		"characteristics",
-		t,
-		"initial",
-		"value"
-	], [
-		"characteristics",
-		t,
-		"initial"
-	]]) + Il(e.system, [[
-		"characteristics",
-		t,
-		"modifier",
-		"value"
-	], [
-		"characteristics",
-		t,
-		"modifier"
-	]]) + Il(e.system, [[
-		"characteristics",
-		t,
-		"advances",
-		"value"
-	], [
-		"characteristics",
-		t,
-		"advances"
-	]]) : n;
+function yH(e) {
+	return Il(e, [["advances", "value"], ["advances"]]);
 }
 //#endregion
 //#region src/module/apps/npc-builder/estimated-xp/species-actor.ts
-var sH = null;
-async function cH(e, t, n) {
-	let r = game.actors.contents, i = lH(n ? r.filter((e) => e.folder?.uuid === n) : [], e);
+var bH = null;
+async function xH(e, t, n) {
+	let r = game.actors.contents, i = SH(n ? r.filter((e) => e.folder?.uuid === n) : [], e);
 	if (i) return {
 		actor: i,
 		source: i.folder?.name ?? "Configured NPC Base Actors folder"
 	};
-	let a = lH(r.filter((e) => e.uuid !== t.uuid), e);
+	let a = SH(r.filter((e) => e.uuid !== t.uuid), e);
 	if (a) return {
 		actor: a,
 		source: "World Actors"
 	};
-	let o = uH(await fH(), e);
+	let o = CH(await TH(), e);
 	if (!o) return null;
 	let s = await fromUuid(o.uuid);
-	if (!mH(s)) throw Error(`The species Actor ${o.uuid} is no longer available.`);
+	if (!DH(s)) throw Error(`The species Actor ${o.uuid} is no longer available.`);
 	return {
 		actor: s,
 		source: o.source
 	};
 }
-function lH(e, t) {
-	return dH(e, t, (e) => e.name);
+function SH(e, t) {
+	return wH(e, t, (e) => e.name);
 }
-function uH(e, t) {
-	return dH(e, t, (e) => e.name);
+function CH(e, t) {
+	return wH(e, t, (e) => e.name);
 }
-function dH(e, t, n) {
+function wH(e, t, n) {
 	let r = t.trim();
 	return e.find((e) => n(e).trim() === r) ?? e.find((e) => wO(n(e)) === wO(t)) ?? null;
 }
-function fH() {
-	return sH ??= pH(), sH;
+function TH() {
+	return bH ??= EH(), bH;
 }
-async function pH() {
+async function EH() {
 	let e = [];
 	for (let t of game.packs ?? []) {
 		if (!YE(t) || !t.getIndex) continue;
@@ -20494,25 +20515,25 @@ async function pH() {
 	}
 	return e;
 }
-function mH(e) {
+function DH(e) {
 	return typeof e == "object" && !!e && "documentName" in e && e.documentName === "Actor";
 }
 //#endregion
 //#region src/module/apps/npc-builder/estimated-xp/estimate.ts
-async function hH(e) {
+async function OH(e) {
 	let t = rE(await fromUuid(e), "Expected an NPC Actor.");
 	if (t.type !== "npc") throw Error(`Expected an NPC Actor, but received Actor type “${t.type}”.`);
-	return await gH(t);
+	return await kH(t);
 }
-async function gH(e) {
-	let t = wB(e);
+async function kH(e) {
+	let t = RB(e);
 	if (!t) return { status: "missing-species" };
-	let n = await cH(t, e, xz().baseActorFolderUuid);
+	let n = await xH(t, e, Nz().baseActorFolderUuid);
 	return n ? {
 		baselineName: n.actor.name,
 		baselineSource: n.source,
 		baselineUuid: n.actor.uuid,
-		breakdown: gk(nH(e), nH(n.actor)),
+		breakdown: gk(gH(e), gH(n.actor)),
 		species: t,
 		status: "ready"
 	} : {
@@ -20522,13 +20543,13 @@ async function gH(e) {
 }
 //#endregion
 //#region src/module/apps/npc-builder/estimated-xp/sheet.ts
-var _H = "[data-wfrp-customizer-npc-xp=\"true\"]", vH = /* @__PURE__ */ new Set(), yH = !1, bH = !1;
-function xH() {
-	if (!yH) {
-		yH = !0, Hooks.on("renderApplicationV2", (e, t) => {
+var AH = "[data-wfrp-customizer-npc-xp=\"true\"]", jH = /* @__PURE__ */ new Set(), MH = !1, NH = !1;
+function PH() {
+	if (!MH) {
+		MH = !0, Hooks.on("renderApplicationV2", (e, t) => {
 			if (!(t instanceof HTMLElement)) return;
-			let n = EH(e);
-			n && SH(n, t);
+			let n = zH(e);
+			n && FH(n, t);
 		});
 		for (let e of [
 			"createActor",
@@ -20538,19 +20559,19 @@ function xH() {
 			"updateItem",
 			"deleteItem",
 			"updateSetting"
-		]) Hooks.on(e, DH);
+		]) Hooks.on(e, BH);
 	}
 }
-function SH(e, t) {
+function FH(e, t) {
 	let n = t.matches("section[data-tab=\"careers\"]") ? t : t.querySelector("section[data-tab=\"careers\"]");
 	if (!n) return;
-	n.querySelector(_H)?.remove();
-	let r = CH(e, t), i = n.querySelector(".sheet-list.careers");
-	i ? n.insertBefore(r.container, i) : n.append(r.container), OH(), wH(r), globalThis.setTimeout(() => {
-		r.root.isConnected && r.root.contains(r.container) && (OH(), vH.add(r));
+	n.querySelector(AH)?.remove();
+	let r = IH(e, t), i = n.querySelector(".sheet-list.careers");
+	i ? n.insertBefore(r.container, i) : n.append(r.container), VH(), LH(r), globalThis.setTimeout(() => {
+		r.root.isConnected && r.root.contains(r.container) && (VH(), jH.add(r));
 	}, 0);
 }
-function CH(e, t) {
+function IH(e, t) {
 	let n = document.createElement("div");
 	n.dataset.wfrpCustomizerNpcXp = "true";
 	let r = document.createElement("div");
@@ -20571,17 +20592,17 @@ function CH(e, t) {
 		root: t
 	};
 }
-async function wH(e) {
+async function LH(e) {
 	let n = ++e.generation;
 	e.output.value = "Calculating…";
 	try {
-		let t = await gH(e.actor);
-		n === e.generation && e.root.contains(e.container) && TH(e, t);
+		let t = await kH(e.actor);
+		n === e.generation && e.root.contains(e.container) && RH(e, t);
 	} catch (r) {
 		n === e.generation && e.root.contains(e.container) && (e.output.value = "Unavailable", e.details.textContent = "XP calculation failed; see the console for details."), t("wfrp4e-customizer-apps | NPC XP calculation failed.", r);
 	}
 }
-function TH(e, t) {
+function RH(e, t) {
 	if (t.status === "missing-species") {
 		e.output.value = "Unavailable", e.details.textContent = "Set this NPC's Species to select a baseline Actor.";
 		return;
@@ -20598,23 +20619,23 @@ function TH(e, t) {
 		`Talents ${n.talents.toLocaleString()}`
 	].join(" · ");
 }
-function EH(e) {
+function zH(e) {
 	if (typeof e != "object" || !e) return null;
 	let t = "actor" in e ? e.actor : void 0, n = "document" in e ? e.document : void 0, r = tE(t) ? t : tE(n) ? n : null;
 	return r?.type === "npc" ? r : null;
 }
-function DH() {
-	bH || (bH = !0, globalThis.setTimeout(() => {
-		bH = !1, OH();
-		for (let e of vH) wH(e);
+function BH() {
+	NH || (NH = !0, globalThis.setTimeout(() => {
+		NH = !1, VH();
+		for (let e of jH) LH(e);
 	}, 0));
 }
-function OH() {
-	for (let e of vH) (!e.root.isConnected || !e.root.contains(e.container)) && vH.delete(e);
+function VH() {
+	for (let e of jH) (!e.root.isConnected || !e.root.contains(e.container)) && jH.delete(e);
 }
 //#endregion
 //#region src/module/apps/species-builder/apply-species-config.ts
-var kH = [
+var HH = [
 	"species",
 	"speciesCharacteristics",
 	"speciesSkills",
@@ -20630,19 +20651,19 @@ var kH = [
 	"speciesHeight",
 	"speciesCareerReplacements"
 ];
-function AH() {
+function UH() {
 	let n = game.wfrp4e?.config;
 	if (!J(n)) {
 		t(`${$} | WFRP config was unavailable; custom species were not applied.`);
 		return;
 	}
 	let r = Jw(), i = new Set(J(n.species) ? Object.keys(n.species) : []), a = r.definitions.filter((e) => !i.has(e.key.trim()));
-	MH(n, _l({
+	GH(n, _l({
 		...r,
 		definitions: a
 	})), a.length > 0 && e(`${$} | Applied ${a.length} custom species definition(s).`);
 }
-async function jH() {
+async function WH() {
 	let n = game.wfrp4e?.config;
 	if (!J(n)) {
 		t(`${$} | WFRP config was unavailable; runtime species extensions were not applied.`);
@@ -20652,15 +20673,15 @@ async function jH() {
 		...Jw(),
 		definitions: []
 	}, await qT());
-	MH(n, r);
+	GH(n, r);
 	let i = Object.values(r.subspecies).reduce((e, t) => e + Object.keys(t).length, 0);
 	i > 0 && e(`${$} | Applied ${i} custom runtime-parent subspecies definition(s).`);
 }
-function MH(e, t) {
-	for (let n of kH) NH(e, n, t[n]);
-	PH(e, t.extraSpecies), FH(e, t.subspecies);
+function GH(e, t) {
+	for (let n of HH) KH(e, n, t[n]);
+	qH(e, t.extraSpecies), JH(e, t.subspecies);
 }
-function NH(e, t, n) {
+function KH(e, t, n) {
 	if (Object.keys(n).length === 0) return;
 	let r = e[t];
 	if (!J(r)) {
@@ -20669,14 +20690,14 @@ function NH(e, t, n) {
 	}
 	Object.assign(r, n);
 }
-function PH(e, t) {
+function qH(e, t) {
 	if (t.length === 0) return;
 	let n = Array.isArray(e.extraSpecies) ? e.extraSpecies : [], r = /* @__PURE__ */ new Set();
 	for (let e of n) typeof e == "string" && r.add(e);
 	for (let e of t) r.add(e);
 	e.extraSpecies = [...r];
 }
-function FH(e, t) {
+function JH(e, t) {
 	if (Object.keys(t).length === 0) return;
 	let n = J(e.subspecies) ? e.subspecies : {};
 	for (let [e, r] of Object.entries(t)) {
@@ -20687,58 +20708,58 @@ function FH(e, t) {
 }
 //#endregion
 //#region src/functions/species-builder/characteristic-roll-formulas.ts
-var IH = "2d10";
-function LH(e) {
+var YH = "2d10";
+function XH(e) {
 	let t = e?.split("+")[0]?.trim();
-	return t ? zH(t) : IH;
+	return t ? QH(t) : YH;
 }
-function RH(e, t) {
-	return LH(e) === LH(t);
+function ZH(e, t) {
+	return XH(e) === XH(t);
 }
-function zH(e) {
+function QH(e) {
 	return e.replaceAll(/\s+/g, "").toLocaleLowerCase();
 }
 //#endregion
 //#region src/module/apps/species-builder/chargen-roll-swap-feedback.ts
-var BH = "data-wfrp4e-customizer-roll-swap-feedback", VH = `[${BH}]`;
-function HH(e, t) {
-	let n = qH(e);
+var $H = "data-wfrp4e-customizer-roll-swap-feedback", eU = `[${$H}]`;
+function tU(e, t) {
+	let n = oU(e);
 	if (n) {
 		n.classList.add("wfrp4e-customizer-apps-root"), n.dataset.theme = "wfrp4e-customizer-apps";
-		for (let e of KH(n)) e.addEventListener("dragstart", () => {
+		for (let e of aU(n)) e.addEventListener("dragstart", () => {
 			let r = e.dataset.ch;
-			r && UH(n, r, t);
+			r && nU(n, r, t);
 		}), e.addEventListener("dragend", () => {
-			GH(n);
+			iU(n);
 		}), e.addEventListener("drop", () => {
-			GH(n);
+			iU(n);
 		});
 	}
 }
-function UH(e, t, n) {
-	GH(e);
-	for (let r of KH(e)) {
+function nU(e, t, n) {
+	iU(e);
+	for (let r of aU(e)) {
 		let e = r.dataset.ch;
 		if (e) {
 			if (e === t) {
-				WH(r, "Dragging", "dui-badge-warning");
+				rU(r, "Dragging", "dui-badge-warning");
 				continue;
 			}
-			n(t, e) ? WH(r, "Compatible", "dui-badge-success") : WH(r, "Cannot swap", "dui-badge-error");
+			n(t, e) ? rU(r, "Compatible", "dui-badge-success") : rU(r, "Cannot swap", "dui-badge-error");
 		}
 	}
 }
-function WH(e, t, n) {
+function rU(e, t, n) {
 	let r = document.createElement("span");
-	r.setAttribute(BH, ""), r.classList.add("dui-badge", n), r.textContent = t, e.append(r);
+	r.setAttribute($H, ""), r.classList.add("dui-badge", n), r.textContent = t, e.append(r);
 }
-function GH(e) {
-	for (let t of e.querySelectorAll(VH)) t.remove();
+function iU(e) {
+	for (let t of e.querySelectorAll(eU)) t.remove();
 }
-function KH(e) {
+function aU(e) {
 	return [...e.querySelectorAll(".ch-roll.ch-drag")];
 }
-function qH(e) {
+function oU(e) {
 	if (e instanceof HTMLElement) return e;
 	if (!J(e)) return;
 	let t = e[0];
@@ -20746,64 +20767,64 @@ function qH(e) {
 }
 //#endregion
 //#region src/module/apps/species-builder/chargen-roll-swap-guard.ts
-var JH = Symbol("wfrp4e-customizer-guarded-attributes-stage");
-function YH() {
+var sU = Symbol("wfrp4e-customizer-guarded-attributes-stage");
+function cU() {
 	Hooks.on("wfrp4e:chargen", (e) => {
-		XH(e);
+		lU(e);
 	});
 }
-function XH(n) {
-	let r = ZH(n);
+function lU(n) {
+	let r = uU(n);
 	if (!r) {
 		t(`${$} | Could not inspect WFRP character generation stages.`);
 		return;
 	}
-	let i = QH(r);
+	let i = dU(r);
 	if (!i) {
 		t(`${$} | Could not find the WFRP Attributes character generation stage.`);
 		return;
 	}
-	if ($H(i.class)) return;
-	let a = eU(i.class);
+	if (fU(i.class)) return;
+	let a = pU(i.class);
 	typeof r.replaceStage == "function" ? r.replaceStage("attributes", a) : i.class = a, e(`${$} | Guarded WFRP characteristic roll swapping for custom species.`);
 }
-function ZH(e) {
+function uU(e) {
 	if (!J(e)) return;
 	let t = {}, n = e.replaceStage;
 	return typeof n == "function" && (t.replaceStage = (t, r) => {
 		n.call(e, t, r);
 	}), Array.isArray(e.stages) && (t.stages = e.stages), t;
 }
-function QH(e) {
+function dU(e) {
 	for (let t of e.stages ?? []) if (J(t) && t.key === "attributes") return typeof t.class == "function" ? t : void 0;
 }
-function $H(e) {
-	return !!e[JH];
+function fU(e) {
+	return !!e[sU];
 }
-function eU(e) {
+function pU(e) {
 	class t extends e {
-		static [JH] = !0;
+		static [sU] = !0;
 		activateListeners(e) {
 			let t = super.activateListeners(e);
-			return HH(e, (e, t) => RH(tU(this, e), tU(this, t))), t;
+			return tU(e, (e, t) => ZH(mU(this, e), mU(this, t))), t;
 		}
 		swap(e, t) {
-			let n = tU(this, e), r = tU(this, t);
-			if (RH(n, r)) return super.swap(e, t);
-			nU(e, n, t, r);
+			let n = mU(this, e), r = mU(this, t);
+			if (ZH(n, r)) return super.swap(e, t);
+			hU(e, n, t, r);
 		}
 	}
 	return t;
 }
-function tU(e, t) {
+function mU(e, t) {
 	let n = J(e.context) ? e.context : void 0, r = J(n?.characteristics) ? n.characteristics : void 0, i = (J(r?.[t]) ? r[t] : void 0)?.formula;
 	return typeof i == "string" ? i : void 0;
 }
-function nU(e, t, n, r) {
-	let i = rU(e), a = rU(n), o = LH(t), s = LH(r);
+function hU(e, t, n, r) {
+	let i = gU(e), a = gU(n), o = XH(t), s = XH(r);
 	ui.notifications?.warn?.(`Cannot swap ${i} and ${a}: ${i} uses ${o}, while ${a} uses ${s}.`);
 }
-function rU(e) {
+function gU(e) {
 	let t = game.wfrp4e?.config?.characteristics;
 	if (!J(t)) return e;
 	let n = t[e];
@@ -20811,20 +20832,20 @@ function rU(e) {
 }
 //#endregion
 //#region src/module/debug/shape-inspector/constants.ts
-var iU = `${$}.debugShapeProbes`, aU = "wfrp4eCustomizerShapeProbes", oU = "wfrp4eCustomizerShapePreset";
+var _U = `${$}.debugShapeProbes`, vU = "wfrp4eCustomizerShapeProbes", yU = "wfrp4eCustomizerShapePreset";
 //#endregion
 //#region src/module/debug/shape-inspector/utils.ts
-function sU(e, t, n) {
+function bU(e, t, n) {
 	let r = Number(e);
 	return Number.isFinite(r) ? Math.max(0, Math.min(n, Math.floor(r))) : t;
 }
-function cU(e) {
+function xU(e) {
 	return typeof e == "object" && !!e;
 }
-function lU(e) {
+function SU(e) {
 	return typeof e == "string" ? e.trim().toLocaleLowerCase() : "";
 }
-function uU(e) {
+function CU(e) {
 	try {
 		return localStorage.getItem(e);
 	} catch {
@@ -20833,65 +20854,65 @@ function uU(e) {
 }
 //#endregion
 //#region src/module/debug/shape-inspector/path-resolver.ts
-function dU(e) {
-	let t = _U(e), n = fU(globalThis, t.root);
+function wU(e) {
+	let t = AU(e), n = TU(globalThis, t.root);
 	for (let e of t.tokens) {
 		if (e.type === "property") {
-			n = fU(n, e.key);
+			n = TU(n, e.key);
 			continue;
 		}
 		if (e.type === "index") {
-			n = fU(n, String(e.index));
+			n = TU(n, String(e.index));
 			continue;
 		}
-		n = pU(n, e.name, e.args);
+		n = EU(n, e.name, e.args);
 	}
 	return n;
 }
-function fU(e, t) {
-	if (!(!cU(e) && typeof e != "function")) try {
+function TU(e, t) {
+	if (!(!xU(e) && typeof e != "function")) try {
 		return e[t];
 	} catch {
 		return;
 	}
 }
-function pU(e, t, n) {
+function EU(e, t, n) {
 	if (t === "at") {
 		let t = Number(n[0] ?? 0), r = Number.isFinite(t) ? t : 0;
-		return vU(e).at(r);
+		return jU(e).at(r);
 	}
 	if (t === "findByName") {
-		let t = lU(n[0] ?? "");
-		return vU(e).find((e) => lU(fU(e, "name")) === t);
+		let t = SU(n[0] ?? "");
+		return jU(e).find((e) => SU(TU(e, "name")) === t);
 	}
 	if (t === "findByType") {
-		let t = lU(n[0] ?? "");
-		return vU(e).find((e) => lU(fU(e, "type")) === t);
+		let t = SU(n[0] ?? "");
+		return jU(e).find((e) => SU(TU(e, "type")) === t);
 	}
 	if (t === "get") {
 		let t = n[0] ?? "";
 		if (e instanceof Map) return e.get(t);
-		let r = fU(e, "get");
+		let r = TU(e, "get");
 		if (typeof r == "function") return r.call(e, t);
 	}
 	if (t === "sample") {
-		let t = sU(n[0], 3, 60);
-		return vU(e).slice(0, t);
+		let t = bU(n[0], 3, 60);
+		return jU(e).slice(0, t);
 	}
 	throw Error(`Unsupported path method "${t}".`);
 }
-function mU(e) {
-	return e.trim() ? e.split(",").map((e) => gU(e.trim())).map(String) : [];
+function DU(e) {
+	return e.trim() ? e.split(",").map((e) => kU(e.trim())).map(String) : [];
 }
-function hU(e) {
+function OU(e) {
 	let t = e.trim();
-	return /^-?\d+$/.test(t) ? Number(t) : gU(t);
+	return /^-?\d+$/.test(t) ? Number(t) : kU(t);
 }
-function gU(e) {
+function kU(e) {
 	let t = /^["'](?<value>.*)["']$/.exec(e);
 	return t?.groups ? t.groups.value ?? "" : e;
 }
-function _U(e) {
+function AU(e) {
 	let t = /^(?<root>[$A-Z_a-z][\w$]*)/.exec(e.trim());
 	if (!t?.groups) throw Error(`Debug path "${e}" does not start with a root name.`);
 	let n = t.groups.root;
@@ -20903,7 +20924,7 @@ function _U(e) {
 			let t = e.groups.name;
 			if (!t) throw Error(`Could not parse debug path near "${i}".`);
 			r.push({
-				args: mU(e.groups.args ?? ""),
+				args: DU(e.groups.args ?? ""),
 				name: t,
 				type: "method"
 			}), i = i.slice(e[0].length);
@@ -20924,7 +20945,7 @@ function _U(e) {
 			let e = n.groups.index;
 			if (!e) throw Error(`Could not parse debug path near "${i}".`);
 			r.push({
-				index: hU(e),
+				index: OU(e),
 				type: "index"
 			}), i = i.slice(n[0].length);
 			continue;
@@ -20936,14 +20957,14 @@ function _U(e) {
 		tokens: r
 	};
 }
-function vU(e) {
+function jU(e) {
 	if (Array.isArray(e)) return e;
-	let t = fU(e, "contents");
+	let t = TU(e, "contents");
 	return Array.isArray(t) ? t : [];
 }
 //#endregion
 //#region src/module/debug/shape-inspector/presets.ts
-var yU = { "npc-builder": [
+var MU = { "npc-builder": [
 	{
 		hook: "ready",
 		label: "game.actors collection",
@@ -21017,82 +21038,82 @@ var yU = { "npc-builder": [
 ] };
 //#endregion
 //#region src/module/debug/shape-inspector/probe-config.ts
-function bU() {
+function NU() {
 	return window.location.href.includes("wfrp4eCustomizerShapeProbes") || window.location.href.includes("wfrp4eCustomizerShapePreset");
 }
-function xU(e) {
+function PU(e) {
 	let t = {
 		hook: e.hook ?? "ready",
-		maxDepth: sU(e.maxDepth, 2, 6),
-		maxEntries: sU(e.maxEntries, 12, 60),
+		maxDepth: bU(e.maxDepth, 2, 6),
+		maxEntries: bU(e.maxEntries, 12, 60),
 		path: e.path.trim()
 	};
 	return e.label && (t.label = e.label), t;
 }
-function SU() {
-	return [...CU(), ...wU()].map(xU);
+function FU() {
+	return [...IU(), ...LU()].map(PU);
 }
-function CU() {
-	let e = uU(iU);
+function IU() {
+	let e = CU(_U);
 	if (!e) return [];
 	try {
 		let t = JSON.parse(e);
-		return Array.isArray(t) ? t.filter(EU).map(xU) : [];
+		return Array.isArray(t) ? t.filter(zU).map(PU) : [];
 	} catch {
 		return [];
 	}
 }
-function wU() {
+function LU() {
 	let e = [], t = [new URLSearchParams(window.location.search), new URLSearchParams(window.location.hash.replace(/^#/, ""))];
 	for (let n of t) {
-		let t = n.get(oU), r = n.get(aU);
-		t && e.push(...yU[t] ?? []), r && e.push(...TU(r));
+		let t = n.get(yU), r = n.get(vU);
+		t && e.push(...MU[t] ?? []), r && e.push(...RU(r));
 	}
-	return window.location.href.includes("wfrp4eCustomizerShapePreset=npc-builder") && !e.length && e.push(...yU["npc-builder"] ?? []), e;
+	return window.location.href.includes("wfrp4eCustomizerShapePreset=npc-builder") && !e.length && e.push(...MU["npc-builder"] ?? []), e;
 }
-function TU(e) {
+function RU(e) {
 	try {
 		let t = JSON.parse(decodeURIComponent(e));
-		return Array.isArray(t) ? t.filter(EU) : [];
+		return Array.isArray(t) ? t.filter(zU) : [];
 	} catch (e) {
 		return t(`${$} | Could not parse URL shape probes.`, e), [];
 	}
 }
-function EU(e) {
+function zU(e) {
 	return typeof e != "object" || !e ? !1 : "path" in e && typeof e.path == "string";
 }
 //#endregion
 //#region src/module/debug/shape-inspector/summary.ts
-function DU(e, t) {
-	return !cU(e) && typeof e != "function" ? MU(e) : typeof e == "function" ? AU(e) : Array.isArray(e) ? OU(e, t) : e instanceof Map ? kU(e, t) : jU(e, t);
+function BU(e, t) {
+	return !xU(e) && typeof e != "function" ? GU(e) : typeof e == "function" ? UU(e) : Array.isArray(e) ? VU(e, t) : e instanceof Map ? HU(e, t) : WU(e, t);
 }
-function OU(e, t) {
+function VU(e, t) {
 	return {
 		length: e.length,
-		sample: e.slice(0, t.maxEntries).map((e) => DU(e, PU(t))),
+		sample: e.slice(0, t.maxEntries).map((e) => BU(e, qU(t))),
 		type: "array"
 	};
 }
-function kU(e, t) {
+function HU(e, t) {
 	return {
 		sample: [...e.entries()].slice(0, t.maxEntries).map(([e, n]) => ({
-			key: DU(e, PU(t)),
-			value: DU(n, PU(t))
+			key: BU(e, qU(t)),
+			value: BU(n, qU(t))
 		})),
 		size: e.size,
 		type: "Map"
 	};
 }
-function AU(e) {
+function UU(e) {
 	return {
 		name: e.name,
 		type: "function"
 	};
 }
-function jU(e, t) {
+function WU(e, t) {
 	if (t.seen.has(e)) return { type: "circular" };
 	t.seen.add(e);
-	let n = NU(e, t.maxEntries), r = fU(e, "constructor"), i = {
+	let n = KU(e, t.maxEntries), r = TU(e, "constructor"), i = {
 		constructor: typeof r == "function" && r.name ? r.name : "Object",
 		keys: n,
 		type: "object"
@@ -21104,16 +21125,16 @@ function jU(e, t) {
 		"type",
 		"uuid"
 	]) {
-		let n = fU(e, t);
+		let n = TU(e, t);
 		typeof n == "string" && (i[t] = n);
 	}
 	if (t.maxDepth <= 0) return i;
 	let a = {};
-	for (let r of n) a[r] = DU(fU(e, r), PU(t));
+	for (let r of n) a[r] = BU(TU(e, r), qU(t));
 	i.properties = a;
-	let o = fU(e, "toObject");
+	let o = TU(e, "toObject");
 	if (typeof o == "function") try {
-		i.source = DU(o.call(e), PU(t));
+		i.source = BU(o.call(e), qU(t));
 	} catch (e) {
 		i.source = {
 			error: e instanceof Error ? e.message : String(e),
@@ -21122,7 +21143,7 @@ function jU(e, t) {
 	}
 	return i;
 }
-function MU(e) {
+function GU(e) {
 	if (typeof e == "string") {
 		let t = e.length > 120 ? `${e.slice(0, 120)}...` : e;
 		return {
@@ -21136,10 +21157,10 @@ function MU(e) {
 		value: e
 	};
 }
-function NU(e, t) {
+function KU(e, t) {
 	return Object.keys(e).sort().slice(0, t);
 }
-function PU(e) {
+function qU(e) {
 	return {
 		maxDepth: e.maxDepth - 1,
 		maxEntries: e.maxEntries,
@@ -21148,42 +21169,42 @@ function PU(e) {
 }
 //#endregion
 //#region src/module/debug/shape-inspector/index.ts
-function FU() {
-	localStorage.removeItem(iU), e(`${$} | Cleared debug shape probes.`);
+function JU() {
+	localStorage.removeItem(_U), e(`${$} | Cleared debug shape probes.`);
 }
-function IU() {
-	return SU();
+function YU() {
+	return FU();
 }
-function LU(e, t = {}) {
-	let n = BU(e, t);
-	return HU(n), n;
+function XU(e, t = {}) {
+	let n = $U(e, t);
+	return tW(n), n;
 }
-function RU() {
-	let t = SU();
+function ZU() {
+	let t = FU();
 	for (let e of ["init", "setup"]) {
 		let n = t.filter((t) => t.hook === e);
 		n.length && Hooks.once(e, () => {
-			for (let t of n) VU(t, e);
+			for (let t of n) eW(t, e);
 		});
 	}
 	Hooks.once("ready", () => {
-		let t = SU().filter((e) => (e.hook ?? "ready") === "ready");
-		bU() && e(`${$} | Debug shape ready probes discovered: ${t.length}`, window.location.href);
-		for (let e of t) VU(e, "ready");
+		let t = FU().filter((e) => (e.hook ?? "ready") === "ready");
+		NU() && e(`${$} | Debug shape ready probes discovered: ${t.length}`, window.location.href);
+		for (let e of t) eW(e, "ready");
 	});
 }
-function zU(t) {
-	let n = t.map(xU);
-	localStorage.setItem(iU, JSON.stringify(n)), e(`${$} | Stored ${n.length} debug shape probe(s). Reload Foundry to run init/setup probes.`);
+function QU(t) {
+	let n = t.map(PU);
+	localStorage.setItem(_U, JSON.stringify(n)), e(`${$} | Stored ${n.length} debug shape probe(s). Reload Foundry to run init/setup probes.`);
 }
-function BU(e, t = {}, n) {
-	let r = sU(t.maxDepth, 2, 6), i = sU(t.maxEntries, 12, 60), a = dU(e), o = {
+function $U(e, t = {}, n) {
+	let r = bU(t.maxDepth, 2, 6), i = bU(t.maxEntries, 12, 60), a = wU(e), o = {
 		inspectedAt: (/* @__PURE__ */ new Date()).toISOString(),
 		label: t.label || e,
 		maxDepth: r,
 		maxEntries: i,
 		path: e,
-		value: DU(a, {
+		value: BU(a, {
 			maxDepth: r,
 			maxEntries: i,
 			seen: /* @__PURE__ */ new WeakSet()
@@ -21191,22 +21212,22 @@ function BU(e, t = {}, n) {
 	};
 	return n && (o.hook = n), o;
 }
-function VU(e, n) {
+function eW(e, n) {
 	try {
-		HU(BU(e.path, e, n));
+		tW($U(e.path, e, n));
 	} catch (n) {
 		t(`${$} | Debug shape probe failed for "${e.path}".`, n);
 	}
 }
-function HU(t) {
+function tW(t) {
 	e(`${$} | Debug shape probe: ${t.label}`, JSON.stringify(t, null, 2));
 }
 //#endregion
 //#region src/view/components/ApplicationShell.vue?vue&type=script&setup=true&lang.ts
-var UU = ["aria-label"], WU = { class: "dui-card-body" }, GU = { class: "dui-card-title" }, KU = { key: 0 }, qU = {
+var nW = ["aria-label"], rW = { class: "dui-card-body" }, iW = { class: "dui-card-title" }, aW = { key: 0 }, oW = {
 	key: 0,
 	class: "dui-card-actions"
-}, JU = /* @__PURE__ */ P({
+}, sW = /* @__PURE__ */ P({
 	__name: "ApplicationShell",
 	props: {
 		description: {},
@@ -21216,17 +21237,17 @@ var UU = ["aria-label"], WU = { class: "dui-card-body" }, GU = { class: "dui-car
 		return (t, n) => (L(), R("section", {
 			"aria-label": e.title,
 			class: "dui-card"
-		}, [B("div", WU, [
+		}, [B("div", rW, [
 			B("header", null, [
-				B("h1", GU, k(e.title), 1),
-				e.description ? (L(), R("p", KU, k(e.description), 1)) : U("", !0),
+				B("h1", iW, k(e.title), 1),
+				e.description ? (L(), R("p", aW, k(e.description), 1)) : U("", !0),
 				Ur(t.$slots, "header")
 			]),
 			Ur(t.$slots, "default"),
-			t.$slots.actions ? (L(), R("div", qU, [Ur(t.$slots, "actions")])) : U("", !0)
-		])], 8, UU));
+			t.$slots.actions ? (L(), R("div", oW, [Ur(t.$slots, "actions")])) : U("", !0)
+		])], 8, nW));
 	}
-}), YU = { class: "dui-list" }, XU = /* @__PURE__ */ P({
+}), cW = { class: "dui-list" }, lW = /* @__PURE__ */ P({
 	__name: "DaisyExampleApp",
 	setup(e) {
 		let t = [
@@ -21235,20 +21256,20 @@ var UU = ["aria-label"], WU = { class: "dui-card-body" }, GU = { class: "dui-car
 			"card",
 			"alert"
 		];
-		return (e, n) => (L(), z(JU, {
+		return (e, n) => (L(), z(sW, {
 			description: "A quick visual check of the module's isolated Daisy component theme.",
 			title: "Daisy Probe"
 		}, {
 			header: N(() => [...n[0] ||= [B("span", { class: "dui-badge dui-badge-primary" }, "Scoped", -1), B("span", { class: "dui-badge dui-badge-outline" }, "Foundry-safe", -1)]]),
 			actions: N(() => [...n[1] ||= [B("span", { class: "dui-badge dui-badge-success" }, "Ready", -1)]]),
-			default: N(() => [n[2] ||= B("div", { class: "dui-alert dui-alert-info" }, [B("span", null, "DaisyUI is available inside this Vue application root.")], -1), B("ul", YU, [(L(), R(I, null, F(t, (e) => B("li", {
+			default: N(() => [n[2] ||= B("div", { class: "dui-alert dui-alert-info" }, [B("span", null, "DaisyUI is available inside this Vue application root.")], -1), B("ul", cW, [(L(), R(I, null, F(t, (e) => B("li", {
 				key: e,
 				class: "dui-list-row"
 			}, k(e), 1)), 64))])]),
 			_: 1
 		}));
 	}
-}), ZU = class extends Mw {
+}), uW = class extends Mw {
 	static DEFAULT_OPTIONS = {
 		...super.DEFAULT_OPTIONS,
 		id: `${$}-daisy-example`,
@@ -21263,9 +21284,9 @@ var UU = ["aria-label"], WU = { class: "dui-card-body" }, GU = { class: "dui-car
 		}
 	};
 	getVueComponent() {
-		return XU;
+		return lW;
 	}
-}, QU = { class: "dui-list" }, $U = { class: "dui-list-row" }, eW = { class: "dui-list-row" }, tW = { class: "dui-list-row" }, nW = /* @__PURE__ */ P({
+}, dW = { class: "dui-list" }, fW = { class: "dui-list-row" }, pW = { class: "dui-list-row" }, mW = { class: "dui-list-row" }, hW = /* @__PURE__ */ P({
 	__name: "WorkbenchApp",
 	props: {
 		openDaisyProbe: { type: Function },
@@ -21273,24 +21294,24 @@ var UU = ["aria-label"], WU = { class: "dui-card-body" }, GU = { class: "dui-car
 		openSpeciesBuilder: { type: Function }
 	},
 	setup(e) {
-		return (t, n) => (L(), z(JU, {
+		return (t, n) => (L(), z(sW, {
 			description: "Open a focused WFRP4e authoring workflow.",
 			title: "Customizer Workbench"
 		}, {
-			default: N(() => [B("ul", QU, [
-				B("li", $U, [n[3] ||= B("div", { class: "dui-list-col-grow" }, [B("strong", null, "NPC Builder"), B("p", null, "Build an NPC from a base Actor, Careers, traits, trappings, and spells.")], -1), B("button", {
+			default: N(() => [B("ul", dW, [
+				B("li", fW, [n[3] ||= B("div", { class: "dui-list-col-grow" }, [B("strong", null, "NPC Builder"), B("p", null, "Build an NPC from a base Actor, Careers, traits, trappings, and spells.")], -1), B("button", {
 					"aria-label": "Open NPC Builder",
 					class: "dui-btn dui-btn-primary",
 					type: "button",
 					onClick: n[0] ||= (...t) => e.openNpcBuilder && e.openNpcBuilder(...t)
 				}, " Open ")]),
-				B("li", eW, [n[4] ||= B("div", { class: "dui-list-col-grow" }, [B("strong", null, "Species Builder"), B("p", null, "Author custom species and apply them to WFRP character generation.")], -1), B("button", {
+				B("li", pW, [n[4] ||= B("div", { class: "dui-list-col-grow" }, [B("strong", null, "Species Builder"), B("p", null, "Author custom species and apply them to WFRP character generation.")], -1), B("button", {
 					"aria-label": "Open Species Builder",
 					class: "dui-btn",
 					type: "button",
 					onClick: n[1] ||= (...t) => e.openSpeciesBuilder && e.openSpeciesBuilder(...t)
 				}, " Open ")]),
-				B("li", tW, [n[5] ||= B("div", { class: "dui-list-col-grow" }, [B("strong", null, "DaisyUI Probe"), B("p", null, "Check the module's scoped component theme.")], -1), B("button", {
+				B("li", mW, [n[5] ||= B("div", { class: "dui-list-col-grow" }, [B("strong", null, "DaisyUI Probe"), B("p", null, "Check the module's scoped component theme.")], -1), B("button", {
 					"aria-label": "Open DaisyUI Probe",
 					class: "dui-btn dui-btn-ghost",
 					type: "button",
@@ -21300,7 +21321,7 @@ var UU = ["aria-label"], WU = { class: "dui-card-body" }, GU = { class: "dui-car
 			_: 1
 		}));
 	}
-}), rW = class extends Mw {
+}), gW = class extends Mw {
 	static DEFAULT_OPTIONS = {
 		...super.DEFAULT_OPTIONS,
 		id: `${$}-workbench`,
@@ -21315,33 +21336,33 @@ var UU = ["aria-label"], WU = { class: "dui-card-body" }, GU = { class: "dui-car
 		}
 	};
 	getVueComponent() {
-		return nW;
+		return hW;
 	}
 	getVueProps() {
 		return {
-			openDaisyProbe: () => new ZU().render(!0),
-			openNpcBuilder: () => new KV().render(!0),
+			openDaisyProbe: () => new uW().render(!0),
+			openNpcBuilder: () => new oH().render(!0),
 			openSpeciesBuilder: () => new gO().render(!0)
 		};
 	}
 };
 //#endregion
 //#region src/module/register-module-menus.ts
-function iW() {
+function _W() {
 	game.settings.registerMenu($, "workbench", {
 		hint: "Open the WFRP4e Customizer Apps workbench.",
 		icon: "fa-solid fa-screwdriver-wrench",
 		label: "Open Workbench",
 		name: "WFRP4e Customizer Apps",
 		restricted: !0,
-		type: rW
+		type: gW
 	}), game.settings.registerMenu($, "npc-builder", {
 		hint: "Build a WFRP4e NPC from a base Actor and Career items.",
 		icon: "fa-solid fa-user-plus",
 		label: "Open NPC Builder",
 		name: "WFRP4e NPC Builder",
 		restricted: !0,
-		type: KV
+		type: oH
 	}), game.settings.registerMenu($, "species-builder", {
 		hint: "Create custom WFRP4e species definitions for character generation.",
 		icon: "fa-solid fa-people-group",
@@ -21355,31 +21376,31 @@ function iW() {
 		label: "Open Daisy Probe",
 		name: "WFRP4e Daisy Probe",
 		restricted: !0,
-		type: ZU
+		type: uW
 	});
 }
 //#endregion
 //#region src/module/register-module-settings.ts
-function aW() {
-	bz(), qw();
+function vW() {
+	Mz(), qw();
 }
 //#endregion
 //#region src/functions/item-grants/wfrp-grant-effect.ts
-var oW = "generatedGrantItemsEffect", sW = {
+var yW = "generatedGrantItemsEffect", bW = {
 	grantMode: "all",
 	lifetime: "linked-to-effect",
 	ownerAction: "keep"
 };
-function cW(e) {
-	let t = e.recipe ?? sW;
-	lW(t);
+function xW(e) {
+	let t = e.recipe ?? bW;
+	SW(t);
 	let n = e.items.map((e) => e.uuid);
 	return {
 		changes: [],
-		description: dW(e.effectName, e.items, t),
+		description: wW(e.effectName, e.items, t),
 		disabled: !1,
 		flags: { [e.flagScope]: {
-			[oW]: !0,
+			[yW]: !0,
 			itemUuids: n,
 			recipe: t
 		} },
@@ -21388,7 +21409,7 @@ function cW(e) {
 		system: {
 			scriptData: [{
 				label: e.effectName,
-				script: uW(n, t),
+				script: CW(n, t),
 				trigger: "addItems"
 			}],
 			transferData: {
@@ -21399,10 +21420,10 @@ function cW(e) {
 		transfer: !0
 	};
 }
-function lW(e) {
+function SW(e) {
 	if (e.lifetime === "linked-to-effect" && e.ownerAction === "delete-after-grant") throw Error("Self-removing grant effects must create detached item copies.");
 }
-function uW(e, t) {
+function CW(e, t) {
 	let n = t.lifetime === "linked-to-effect" ? "{ fromEffect: this.effect.id }" : "{}", r = t.ownerAction === "delete-after-grant" ? [
 		"",
 		"if (this.item) {",
@@ -21438,19 +21459,19 @@ function uW(e, t) {
 		...r
 	].join("\n");
 }
-function dW(e, t, n) {
-	let r = fW(e), i = t.map((e) => `<li>${fW(e.name)}</li>`).join("");
+function wW(e, t, n) {
+	let r = TW(e), i = t.map((e) => `<li>${TW(e.name)}</li>`).join("");
 	return `<p><strong>${r}</strong>: grants item copies; ${n.lifetime === "linked-to-effect" ? "granted item copies are removed with this effect" : "granted item copies remain after this effect is removed"}.${n.ownerAction === "delete-after-grant" ? " The source Item removes itself after granting." : ""}</p><ul>${i}</ul>`;
 }
-function fW(e) {
+function TW(e) {
 	return e.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 }
 //#endregion
 //#region src/view/apps/grant-builder/GrantBuilderApp.vue?vue&type=script&setup=true&lang.ts
-var pW = { class: "dui-card dui-card-border dui-card-sm" }, mW = { class: "dui-card-body" }, hW = { class: "dui-list" }, gW = {
+var EW = { class: "dui-card dui-card-border dui-card-sm" }, DW = { class: "dui-card-body" }, OW = { class: "dui-list" }, kW = {
 	key: 0,
 	class: "dui-list-row"
-}, _W = ["src"], vW = { class: "dui-list-col-grow" }, yW = ["title", "onClick"], bW = { class: "dui-card dui-card-border dui-card-sm" }, xW = { class: "dui-card-body" }, SW = { class: "dui-fieldset" }, CW = { class: "dui-label" }, wW = ["value"], TW = { class: "dui-card-body" }, EW = { class: "dui-fieldset" }, DW = { class: "dui-label" }, OW = ["checked"], kW = { class: "dui-label" }, AW = ["checked"], jW = { class: "dui-label" }, MW = ["checked", "disabled"], NW = ["disabled"], PW = /* @__PURE__ */ P({
+}, AW = ["src"], jW = { class: "dui-list-col-grow" }, MW = ["title", "onClick"], NW = { class: "dui-card dui-card-border dui-card-sm" }, PW = { class: "dui-card-body" }, FW = { class: "dui-fieldset" }, IW = { class: "dui-label" }, LW = ["value"], RW = { class: "dui-card-body" }, zW = { class: "dui-fieldset" }, BW = { class: "dui-label" }, VW = ["checked"], HW = { class: "dui-label" }, UW = ["checked"], WW = { class: "dui-label" }, GW = ["checked", "disabled"], KW = ["disabled"], qW = /* @__PURE__ */ P({
 	__name: "GrantBuilderApp",
 	props: {
 		carrierName: {},
@@ -21470,7 +21491,7 @@ var pW = { class: "dui-card dui-card-border dui-card-sm" }, mW = { class: "dui-c
 		function t(e) {
 			return e.target instanceof HTMLInputElement ? e.target.value : "";
 		}
-		return (n, r) => (L(), z(JU, {
+		return (n, r) => (L(), z(sW, {
 			description: `Build an item-granting Active Effect on ${e.carrierName}.`,
 			title: "Grant Builder"
 		}, {
@@ -21483,9 +21504,9 @@ var pW = { class: "dui-card dui-card-border dui-card-sm" }, mW = { class: "dui-c
 				type: "button",
 				disabled: e.items.length === 0,
 				onClick: r[6] ||= (...t) => e.onCreate && e.onCreate(...t)
-			}, " Create Grant Effect ", 8, NW)]),
+			}, " Create Grant Effect ", 8, KW)]),
 			default: N(() => [
-				B("section", pW, [B("div", mW, [
+				B("section", EW, [B("div", DW, [
 					r[8] ||= B("h2", { class: "dui-card-title" }, "Granted Items", -1),
 					V(fy, {
 						description: "World and compendium Items can be added one at a time.",
@@ -21493,7 +21514,7 @@ var pW = { class: "dui-card dui-card-border dui-card-sm" }, mW = { class: "dui-c
 						title: "Drop Items Here",
 						onDropData: e.onDropData
 					}, null, 8, ["onDropData"]),
-					B("ul", hW, [e.items.length === 0 ? (L(), R("li", gW, "No granted items configured.")) : (L(!0), R(I, { key: 1 }, F(e.items, (t) => (L(), R("li", {
+					B("ul", OW, [e.items.length === 0 ? (L(), R("li", kW, "No granted items configured.")) : (L(!0), R(I, { key: 1 }, F(e.items, (t) => (L(), R("li", {
 						key: t.uuid,
 						class: "dui-list-row"
 					}, [
@@ -21501,8 +21522,8 @@ var pW = { class: "dui-card dui-card-border dui-card-sm" }, mW = { class: "dui-c
 							key: 0,
 							alt: "",
 							src: t.img
-						}, null, 8, _W)) : U("", !0),
-						B("div", vW, [B("strong", null, k(t.name), 1), B("small", null, k(t.uuid), 1)]),
+						}, null, 8, AW)) : U("", !0),
+						B("div", jW, [B("strong", null, k(t.name), 1), B("small", null, k(t.uuid), 1)]),
 						B("button", {
 							class: "dui-btn dui-btn-ghost dui-btn-sm dui-btn-square",
 							type: "button",
@@ -21511,51 +21532,51 @@ var pW = { class: "dui-card dui-card-border dui-card-sm" }, mW = { class: "dui-c
 						}, [...r[7] ||= [B("i", {
 							class: "fa-solid fa-times",
 							"aria-hidden": "true"
-						}, null, -1)]], 8, yW)
+						}, null, -1)]], 8, MW)
 					]))), 128))])
 				])]),
-				B("section", bW, [B("div", xW, [B("fieldset", SW, [r[10] ||= B("legend", { class: "dui-fieldset-legend" }, "Effect", -1), B("label", CW, [r[9] ||= B("span", null, "Effect name", -1), B("input", {
+				B("section", NW, [B("div", PW, [B("fieldset", FW, [r[10] ||= B("legend", { class: "dui-fieldset-legend" }, "Effect", -1), B("label", IW, [r[9] ||= B("span", null, "Effect name", -1), B("input", {
 					class: "dui-input",
 					value: e.effectName,
 					type: "text",
 					onInput: r[0] ||= (n) => e.onEffectNameInput(t(n))
-				}, null, 40, wW)])])])]),
+				}, null, 40, LW)])])])]),
 				B("form", {
 					class: "dui-card dui-card-border dui-card-sm",
 					onSubmit: r[4] ||= Yo(() => {}, ["prevent"])
-				}, [B("div", TW, [B("fieldset", EW, [
+				}, [B("div", RW, [B("fieldset", zW, [
 					r[14] ||= B("legend", { class: "dui-fieldset-legend" }, "Granted Item Lifetime", -1),
-					B("label", DW, [B("input", {
+					B("label", BW, [B("input", {
 						class: "dui-radio",
 						name: "grant-lifetime",
 						type: "radio",
 						value: "linked-to-effect",
 						checked: e.lifetime === "linked-to-effect",
 						onChange: r[1] ||= (t) => e.onLifetimeChange("linked-to-effect")
-					}, null, 40, OW), r[11] ||= B("span", null, [
+					}, null, 40, VW), r[11] ||= B("span", null, [
 						B("strong", null, "Linked to this effect"),
 						B("br"),
 						H(" Granted Items are removed when this effect is deleted. ")
 					], -1)]),
-					B("label", kW, [B("input", {
+					B("label", HW, [B("input", {
 						class: "dui-radio",
 						name: "grant-lifetime",
 						type: "radio",
 						value: "detached",
 						checked: e.lifetime === "detached",
 						onChange: r[2] ||= (t) => e.onLifetimeChange("detached")
-					}, null, 40, AW), r[12] ||= B("span", null, [
+					}, null, 40, UW), r[12] ||= B("span", null, [
 						B("strong", null, "Detached copies"),
 						B("br"),
 						H(" Granted Items remain after this effect or source Item is removed. ")
 					], -1)]),
-					B("label", jW, [B("input", {
+					B("label", WW, [B("input", {
 						class: "dui-checkbox",
 						type: "checkbox",
 						checked: e.ownerAction === "delete-after-grant",
 						disabled: e.lifetime !== "detached",
 						onChange: r[3] ||= (t) => e.onOwnerActionChange(e.ownerAction === "delete-after-grant" ? "keep" : "delete-after-grant")
-					}, null, 40, MW), r[13] ||= H(" Remove the source Item after granting. ", -1)])
+					}, null, 40, GW), r[13] ||= H(" Remove the source Item after granting. ", -1)])
 				])])], 32)
 			]),
 			_: 1
@@ -21564,7 +21585,7 @@ var pW = { class: "dui-card dui-card-border dui-card-sm" }, mW = { class: "dui-c
 });
 //#endregion
 //#region src/module/wfrp4e/grant/item-documents.ts
-function FW(e) {
+function JW(e) {
 	let t = e.dataTransfer?.getData("text/plain") ?? "";
 	if (!t) return null;
 	try {
@@ -21573,12 +21594,12 @@ function FW(e) {
 		return null;
 	}
 }
-async function IW(e) {
+async function YW(e) {
 	let t = oE(e);
 	if (!t.uuid) throw Error("Drop an Item with a resolvable UUID.");
 	return iE(await fromUuid(t.uuid), "The dropped Item was not found.");
 }
-function LW(e) {
+function XW(e) {
 	let t = {
 		name: e.name,
 		uuid: e.uuid
@@ -21587,7 +21608,7 @@ function LW(e) {
 }
 //#endregion
 //#region src/module/apps/grant-builder/GrantBuilderApplication.ts
-var RW = "detached", zW = class extends Mw {
+var ZW = "detached", QW = class extends Mw {
 	static DEFAULT_OPTIONS = {
 		...super.DEFAULT_OPTIONS,
 		classes: [$, "wfrp4e-customizer-grant-builder"],
@@ -21612,7 +21633,7 @@ var RW = "detached", zW = class extends Mw {
 		super(), this.carrierItem = e;
 	}
 	getVueComponent() {
-		return PW;
+		return qW;
 	}
 	getVueProps() {
 		return {
@@ -21633,7 +21654,7 @@ var RW = "detached", zW = class extends Mw {
 		};
 	}
 	changeLifetime(e) {
-		this.#r = e, e !== RW && (this.#i = "keep"), this.render();
+		this.#r = e, e !== ZW && (this.#i = "keep"), this.render();
 	}
 	changeOwnerAction(e) {
 		this.#i = e, this.render();
@@ -21643,13 +21664,13 @@ var RW = "detached", zW = class extends Mw {
 	}
 	async handleDrop(e) {
 		try {
-			let t = await IW(e);
+			let t = await YW(e);
 			if (t.uuid === this.carrierItem.uuid) throw Error("An Item cannot grant itself.");
 			if (this.#n.some((e) => e.uuid === t.uuid)) {
 				ui.notifications?.warn?.(`"${t.name}" is already in this grant effect.`);
 				return;
 			}
-			this.#n = [...this.#n, LW(t)], this.updateDefaultEffectName(), this.render();
+			this.#n = [...this.#n, XW(t)], this.updateDefaultEffectName(), this.render();
 		} catch (e) {
 			let t = e instanceof Error ? e.message : "The dropped Item could not be converted.";
 			ui.notifications?.warn?.(t);
@@ -21679,7 +21700,7 @@ var RW = "detached", zW = class extends Mw {
 				grantMode: "all",
 				lifetime: this.#r,
 				ownerAction: this.#i
-			}, n = cW({
+			}, n = xW({
 				effectName: e,
 				flagScope: $,
 				items: this.#n,
@@ -21691,51 +21712,51 @@ var RW = "detached", zW = class extends Mw {
 			ui.notifications?.warn?.(t);
 		}
 	}
-}, BW = new Set(["talent", "trait"]), VW = /* @__PURE__ */ new WeakSet(), HW = !1, UW = "wfrp4e-customizer-grant-builder-button", WW = [
+}, $W = new Set(["talent", "trait"]), eG = /* @__PURE__ */ new WeakSet(), tG = !1, nG = "wfrp4e-customizer-grant-builder-button", rG = [
 	"section[data-application-part=\"effects\"].active",
 	"section[data-tab=\"effects\"].active",
 	".tab[data-tab=\"effects\"].active",
 	".tab.effects.active"
-].join(","), GW = [
+].join(","), iG = [
 	"section[data-application-part=\"effects\"]",
 	"section[data-tab=\"effects\"]",
 	".tab[data-tab=\"effects\"]",
 	".tab.effects"
 ].join(",");
-function KW() {
-	HW || (HW = !0, Hooks.on("renderApplicationV2", (e, t) => {
+function aG() {
+	tG || (tG = !0, Hooks.on("renderApplicationV2", (e, t) => {
 		if (!(t instanceof HTMLElement)) return;
-		let n = XW(e);
-		!n || !BW.has(n.type) || (qW(n, t), JW(n, t));
+		let n = lG(e);
+		!n || !$W.has(n.type) || (oG(n, t), sG(n, t));
 	}));
 }
-function qW(e, t) {
-	VW.has(t) || (VW.add(t), t.addEventListener("dragover", (e) => {
-		ZW(t, e.target) && (e.preventDefault(), e.dataTransfer && (e.dataTransfer.dropEffect = "copy"));
+function oG(e, t) {
+	eG.has(t) || (eG.add(t), t.addEventListener("dragover", (e) => {
+		uG(t, e.target) && (e.preventDefault(), e.dataTransfer && (e.dataTransfer.dropEffect = "copy"));
 	}, !0), t.addEventListener("drop", (n) => {
-		YW(e, t, n);
+		cG(e, t, n);
 	}, !0));
 }
-function JW(e, t) {
-	if (t.querySelector(`.${UW}`)) return;
-	let n = $W(t, { includeInactive: !0 });
+function sG(e, t) {
+	if (t.querySelector(`.${nG}`)) return;
+	let n = fG(t, { includeInactive: !0 });
 	if (!n) return;
 	let r = document.createElement("div");
 	r.classList.add("wfrp4e-customizer-grant-builder-toolbar");
 	let i = document.createElement("button");
-	i.type = "button", i.classList.add(UW), i.title = "Open the advanced item grant builder", i.innerHTML = "<i class=\"fa-solid fa-sitemap\" aria-hidden=\"true\"></i><span>Grant Builder</span>", i.addEventListener("click", () => {
-		new zW(e).render(!0);
+	i.type = "button", i.classList.add(nG), i.title = "Open the advanced item grant builder", i.innerHTML = "<i class=\"fa-solid fa-sitemap\" aria-hidden=\"true\"></i><span>Grant Builder</span>", i.addEventListener("click", () => {
+		new QW(e).render(!0);
 	}), r.append(i), n.prepend(r);
 }
-async function YW(e, t, n) {
-	if (!ZW(t, n.target)) return;
-	let r = FW(n);
+async function cG(e, t, n) {
+	if (!uG(t, n.target)) return;
+	let r = JW(n);
 	if (r) {
 		n.preventDefault(), n.stopPropagation();
 		try {
-			let t = await IW(r);
+			let t = await YW(r);
 			if (t.uuid === e.uuid) throw Error("An Item cannot grant itself.");
-			let n = LW(t), i = cW({
+			let n = XW(t), i = xW({
 				effectName: `Grant ${t.name}`,
 				flagScope: $,
 				items: [n]
@@ -21748,79 +21769,79 @@ async function YW(e, t, n) {
 		}
 	}
 }
-function XW(e) {
+function lG(e) {
 	if (typeof e != "object" || !e) return null;
 	let t = "item" in e ? e.item : void 0;
 	if (nE(t)) return t;
 	let n = "document" in e ? e.document : void 0;
 	return nE(n) ? n : null;
 }
-function ZW(e, t) {
-	return !(t instanceof Element) || !e.contains(t) ? !1 : !!QW(e);
+function uG(e, t) {
+	return !(t instanceof Element) || !e.contains(t) ? !1 : !!dG(e);
 }
-function QW(e) {
-	return e.querySelector(WW) || $W(e, { includeInactive: !1 });
+function dG(e) {
+	return e.querySelector(rG) || fG(e, { includeInactive: !1 });
 }
-function $W(e, t) {
-	return [...e.querySelectorAll(GW)].find((e) => t.includeInactive || e.offsetParent !== null) ?? null;
+function fG(e, t) {
+	return [...e.querySelectorAll(iG)].find((e) => t.includeInactive || e.offsetParent !== null) ?? null;
 }
 //#endregion
 //#region src/module/api/create-module-api.ts
-function eG() {
+function pG() {
 	return {
-		clearDebugShapeProbes: FU,
-		estimateNpcXp: hH,
-		getDebugShapeProbes: IU,
-		inspectPath: LU,
+		clearDebugShapeProbes: JU,
+		estimateNpcXp: OH,
+		getDebugShapeProbes: YU,
+		inspectPath: XU,
 		listNpcAutoAdvanceStrategies: JA,
 		async openDaisyExample() {
-			await new ZU().render(!0);
+			await new uW().render(!0);
 		},
 		async openNpcBuilder() {
-			await new KV().render(!0);
+			await new oH().render(!0);
 		},
 		async openSpeciesBuilder() {
 			await new gO().render(!0);
 		},
 		async openWorkbench() {
-			await new rW().render(!0);
+			await new gW().render(!0);
 		},
 		registerNpcAutoAdvanceStrategy: qA,
-		setDebugShapeProbes: zU
+		setDebugShapeProbes: QU
 	};
 }
 //#endregion
 //#region src/module/api/register-module-api.ts
-function tG() {
+function mG() {
 	let e = game.modules.get($);
 	if (!e) throw Error(`Foundry module registry entry was not found for ${$}.`);
-	e.api = eG();
+	e.api = pG();
 }
 //#endregion
 //#region src/module/hooks/register-module-hooks.ts
-function nG() {
-	RU(), Hooks.once("init", () => {
-		e(`${$} | Initializing`), aW(), game.system.id === "wfrp4e" && (GT(), AH(), xH(), YH(), KW()), iW(), YV();
+function hG() {
+	ZU(), Hooks.once("init", () => {
+		e(`${$} | Initializing`), vW(), game.system.id === "wfrp4e" && (GT(), UH(), PH(), cU(), aG()), _W(), lH();
 	}), Hooks.once("ready", () => {
 		if (game.system.id !== "wfrp4e") {
 			t(`${$} | Loaded outside ${yw}; skipping module API registration.`);
 			return;
 		}
-		rG();
+		gG();
 	});
 }
-async function rG() {
+async function gG() {
 	await Promise.resolve();
 	try {
-		await KT(Jw().definitions.map(({ key: e }) => e)), await jH();
+		await KT(Jw().definitions.map(({ key: e }) => e)), await WH();
 	} catch (e) {
 		t(`${$} | Runtime species catalog could not be prepared: ${e instanceof Error ? e.message : "Unknown runtime adaptation error."}`);
 	}
-	tG(), MR(), XR(), XT(), cO(), e(`${$} | Ready`);
+	mG(), UR(), sz(), XT(), cO(), e(`${$} | Ready`);
 }
 //#endregion
 //#region src/main.ts
-nG();
+hG();
 //#endregion
 
 //# sourceMappingURL=wfrp4e-customizer-apps.mjs.map
