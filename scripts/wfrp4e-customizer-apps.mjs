@@ -22047,45 +22047,57 @@ function uG(e) {
 }
 //#endregion
 //#region src/module/apps/species-builder/chargen-roll-swap-feedback.ts
-var dG = "data-wfrp4e-customizer-roll-swap-feedback", fG = `[${dG}]`;
-function pG(e, t) {
-	let n = vG(e);
-	if (n) {
-		n.classList.add("wfrp4e-customizer-apps-root"), n.dataset.theme = "wfrp4e-customizer-apps";
-		for (let e of _G(n)) e.addEventListener("dragstart", () => {
-			let r = e.dataset.ch;
-			r && mG(n, r, t);
-		}), e.addEventListener("dragend", () => {
-			gG(n);
-		}), e.addEventListener("drop", () => {
-			gG(n);
-		});
-	}
-}
-function mG(e, t, n) {
-	gG(e);
-	for (let r of _G(e)) {
-		let e = r.dataset.ch;
-		if (e) {
-			if (e === t) {
-				hG(r, "Dragging", "dui-badge-warning");
-				continue;
-			}
-			n(t, e) ? hG(r, "Compatible", "dui-badge-success") : hG(r, "Cannot swap", "dui-badge-error");
-		}
-	}
+var dG = "data-wfrp4e-customizer-roll-swap-feedback", fG = `[${dG}="blocked"]`, pG = /* @__PURE__ */ new WeakMap();
+function mG(e, t) {
+	let n = xG(e);
+	if (n) for (let e of bG(n)) e.addEventListener("dragstart", () => {
+		let r = e.dataset.ch;
+		r && hG(n, r, t);
+	}), e.addEventListener("dragend", () => {
+		_G(n);
+	}), e.addEventListener("drop", () => {
+		_G(n);
+	});
 }
 function hG(e, t, n) {
-	let r = document.createElement("span");
-	r.setAttribute(dG, ""), r.classList.add("dui-badge", n), r.textContent = t, e.append(r);
+	_G(e);
+	for (let r of bG(e)) {
+		let e = r.dataset.ch;
+		e && (e === t || n(t, e) || gG(r));
+	}
 }
 function gG(e) {
-	for (let t of e.querySelectorAll(fG)) t.remove();
+	pG.set(e, {
+		ariaDisabled: e.getAttribute("aria-disabled"),
+		borderColor: e.style.getPropertyValue("border-color"),
+		borderColorPriority: e.style.getPropertyPriority("border-color"),
+		hadDisabledClass: e.classList.contains("disabled")
+	}), e.setAttribute(dG, "blocked"), e.setAttribute("aria-disabled", "true"), e.classList.add("disabled"), e.style.setProperty("border-color", "transparent");
 }
 function _G(e) {
+	for (let t of e.querySelectorAll(fG)) {
+		let e = pG.get(t);
+		e && (e.hadDisabledClass || t.classList.remove("disabled"), vG(t, "aria-disabled", e.ariaDisabled), yG(t, "border-color", e.borderColor, e.borderColorPriority), t.removeAttribute(dG), pG.delete(t));
+	}
+}
+function vG(e, t, n) {
+	if (n === null) {
+		e.removeAttribute(t);
+		return;
+	}
+	e.setAttribute(t, n);
+}
+function yG(e, t, n, r) {
+	if (!n) {
+		e.style.removeProperty(t);
+		return;
+	}
+	e.style.setProperty(t, n, r);
+}
+function bG(e) {
 	return [...e.querySelectorAll(".ch-roll.ch-drag")];
 }
-function vG(e) {
+function xG(e) {
 	if (e instanceof HTMLElement) return e;
 	if (!J(e)) return;
 	let t = e[0];
@@ -22093,64 +22105,64 @@ function vG(e) {
 }
 //#endregion
 //#region src/module/apps/species-builder/chargen-roll-swap-guard.ts
-var yG = Symbol("wfrp4e-customizer-guarded-attributes-stage");
-function bG() {
+var SG = Symbol("wfrp4e-customizer-guarded-attributes-stage");
+function CG() {
 	Hooks.on("wfrp4e:chargen", (e) => {
-		xG(e);
+		wG(e);
 	});
 }
-function xG(n) {
-	let r = SG(n);
+function wG(n) {
+	let r = TG(n);
 	if (!r) {
 		t(`${$} | Could not inspect WFRP character generation stages.`);
 		return;
 	}
-	let i = CG(r);
+	let i = EG(r);
 	if (!i) {
 		t(`${$} | Could not find the WFRP Attributes character generation stage.`);
 		return;
 	}
-	if (wG(i.class)) return;
-	let a = TG(i.class);
+	if (DG(i.class)) return;
+	let a = OG(i.class);
 	typeof r.replaceStage == "function" ? r.replaceStage("attributes", a) : i.class = a, e(`${$} | Guarded WFRP characteristic roll swapping for custom species.`);
 }
-function SG(e) {
+function TG(e) {
 	if (!J(e)) return;
 	let t = {}, n = e.replaceStage;
 	return typeof n == "function" && (t.replaceStage = (t, r) => {
 		n.call(e, t, r);
 	}), Array.isArray(e.stages) && (t.stages = e.stages), t;
 }
-function CG(e) {
+function EG(e) {
 	for (let t of e.stages ?? []) if (J(t) && t.key === "attributes") return typeof t.class == "function" ? t : void 0;
 }
-function wG(e) {
-	return !!e[yG];
+function DG(e) {
+	return !!e[SG];
 }
-function TG(e) {
+function OG(e) {
 	class t extends e {
-		static [yG] = !0;
+		static [SG] = !0;
 		activateListeners(e) {
 			let t = super.activateListeners(e);
-			return pG(e, (e, t) => lG(EG(this, e), EG(this, t))), t;
+			return mG(e, (e, t) => lG(kG(this, e), kG(this, t))), t;
 		}
 		swap(e, t) {
-			let n = EG(this, e), r = EG(this, t);
+			let n = kG(this, e), r = kG(this, t);
 			if (lG(n, r)) return super.swap(e, t);
-			DG(e, n, t, r);
+			AG(e, n, t, r);
 		}
 	}
 	return t;
 }
-function EG(e, t) {
+function kG(e, t) {
 	let n = J(e.context) ? e.context : void 0, r = J(n?.characteristics) ? n.characteristics : void 0, i = (J(r?.[t]) ? r[t] : void 0)?.formula;
 	return typeof i == "string" ? i : void 0;
 }
-function DG(e, t, n, r) {
-	let i = OG(e), a = OG(n), o = cG(t), s = cG(r);
+function AG(e, t, n, r) {
+	let i = jG(e), a = jG(n), o = cG(t), s = cG(r);
 	ui.notifications?.warn?.(`Cannot swap ${i} and ${a}: ${i} uses ${o}, while ${a} uses ${s}.`);
 }
-function OG(e) {
+function jG(e) {
 	let t = game.wfrp4e?.config?.characteristics;
 	if (!J(t)) return e;
 	let n = t[e];
@@ -22158,20 +22170,20 @@ function OG(e) {
 }
 //#endregion
 //#region src/module/debug/shape-inspector/constants.ts
-var kG = `${$}.debugShapeProbes`, AG = "wfrp4eCustomizerShapeProbes", jG = "wfrp4eCustomizerShapePreset";
+var MG = `${$}.debugShapeProbes`, NG = "wfrp4eCustomizerShapeProbes", PG = "wfrp4eCustomizerShapePreset";
 //#endregion
 //#region src/module/debug/shape-inspector/utils.ts
-function MG(e, t, n) {
+function FG(e, t, n) {
 	let r = Number(e);
 	return Number.isFinite(r) ? Math.max(0, Math.min(n, Math.floor(r))) : t;
 }
-function NG(e) {
+function IG(e) {
 	return typeof e == "object" && !!e;
 }
-function PG(e) {
+function LG(e) {
 	return typeof e == "string" ? e.trim().toLocaleLowerCase() : "";
 }
-function FG(e) {
+function RG(e) {
 	try {
 		return localStorage.getItem(e);
 	} catch {
@@ -22180,65 +22192,65 @@ function FG(e) {
 }
 //#endregion
 //#region src/module/debug/shape-inspector/path-resolver.ts
-function IG(e) {
-	let t = HG(e), n = LG(globalThis, t.root);
+function zG(e) {
+	let t = GG(e), n = BG(globalThis, t.root);
 	for (let e of t.tokens) {
 		if (e.type === "property") {
-			n = LG(n, e.key);
+			n = BG(n, e.key);
 			continue;
 		}
 		if (e.type === "index") {
-			n = LG(n, String(e.index));
+			n = BG(n, String(e.index));
 			continue;
 		}
-		n = RG(n, e.name, e.args);
+		n = VG(n, e.name, e.args);
 	}
 	return n;
 }
-function LG(e, t) {
-	if (!(!NG(e) && typeof e != "function")) try {
+function BG(e, t) {
+	if (!(!IG(e) && typeof e != "function")) try {
 		return e[t];
 	} catch {
 		return;
 	}
 }
-function RG(e, t, n) {
+function VG(e, t, n) {
 	if (t === "at") {
 		let t = Number(n[0] ?? 0), r = Number.isFinite(t) ? t : 0;
-		return UG(e).at(r);
+		return KG(e).at(r);
 	}
 	if (t === "findByName") {
-		let t = PG(n[0] ?? "");
-		return UG(e).find((e) => PG(LG(e, "name")) === t);
+		let t = LG(n[0] ?? "");
+		return KG(e).find((e) => LG(BG(e, "name")) === t);
 	}
 	if (t === "findByType") {
-		let t = PG(n[0] ?? "");
-		return UG(e).find((e) => PG(LG(e, "type")) === t);
+		let t = LG(n[0] ?? "");
+		return KG(e).find((e) => LG(BG(e, "type")) === t);
 	}
 	if (t === "get") {
 		let t = n[0] ?? "";
 		if (e instanceof Map) return e.get(t);
-		let r = LG(e, "get");
+		let r = BG(e, "get");
 		if (typeof r == "function") return r.call(e, t);
 	}
 	if (t === "sample") {
-		let t = MG(n[0], 3, 60);
-		return UG(e).slice(0, t);
+		let t = FG(n[0], 3, 60);
+		return KG(e).slice(0, t);
 	}
 	throw Error(`Unsupported path method "${t}".`);
 }
-function zG(e) {
-	return e.trim() ? e.split(",").map((e) => VG(e.trim())).map(String) : [];
+function HG(e) {
+	return e.trim() ? e.split(",").map((e) => WG(e.trim())).map(String) : [];
 }
-function BG(e) {
+function UG(e) {
 	let t = e.trim();
-	return /^-?\d+$/.test(t) ? Number(t) : VG(t);
+	return /^-?\d+$/.test(t) ? Number(t) : WG(t);
 }
-function VG(e) {
+function WG(e) {
 	let t = /^["'](?<value>.*)["']$/.exec(e);
 	return t?.groups ? t.groups.value ?? "" : e;
 }
-function HG(e) {
+function GG(e) {
 	let t = /^(?<root>[$A-Z_a-z][\w$]*)/.exec(e.trim());
 	if (!t?.groups) throw Error(`Debug path "${e}" does not start with a root name.`);
 	let n = t.groups.root;
@@ -22250,7 +22262,7 @@ function HG(e) {
 			let t = e.groups.name;
 			if (!t) throw Error(`Could not parse debug path near "${i}".`);
 			r.push({
-				args: zG(e.groups.args ?? ""),
+				args: HG(e.groups.args ?? ""),
 				name: t,
 				type: "method"
 			}), i = i.slice(e[0].length);
@@ -22271,7 +22283,7 @@ function HG(e) {
 			let e = n.groups.index;
 			if (!e) throw Error(`Could not parse debug path near "${i}".`);
 			r.push({
-				index: BG(e),
+				index: UG(e),
 				type: "index"
 			}), i = i.slice(n[0].length);
 			continue;
@@ -22283,14 +22295,14 @@ function HG(e) {
 		tokens: r
 	};
 }
-function UG(e) {
+function KG(e) {
 	if (Array.isArray(e)) return e;
-	let t = LG(e, "contents");
+	let t = BG(e, "contents");
 	return Array.isArray(t) ? t : [];
 }
 //#endregion
 //#region src/module/debug/shape-inspector/presets.ts
-var WG = { "npc-builder": [
+var qG = { "npc-builder": [
 	{
 		hook: "ready",
 		label: "game.actors collection",
@@ -22364,82 +22376,82 @@ var WG = { "npc-builder": [
 ] };
 //#endregion
 //#region src/module/debug/shape-inspector/probe-config.ts
-function GG() {
+function JG() {
 	return window.location.href.includes("wfrp4eCustomizerShapeProbes") || window.location.href.includes("wfrp4eCustomizerShapePreset");
 }
-function KG(e) {
+function YG(e) {
 	let t = {
 		hook: e.hook ?? "ready",
-		maxDepth: MG(e.maxDepth, 2, 6),
-		maxEntries: MG(e.maxEntries, 12, 60),
+		maxDepth: FG(e.maxDepth, 2, 6),
+		maxEntries: FG(e.maxEntries, 12, 60),
 		path: e.path.trim()
 	};
 	return e.label && (t.label = e.label), t;
 }
-function qG() {
-	return [...JG(), ...YG()].map(KG);
+function XG() {
+	return [...ZG(), ...QG()].map(YG);
 }
-function JG() {
-	let e = FG(kG);
+function ZG() {
+	let e = RG(MG);
 	if (!e) return [];
 	try {
 		let t = JSON.parse(e);
-		return Array.isArray(t) ? t.filter(ZG).map(KG) : [];
+		return Array.isArray(t) ? t.filter(eK).map(YG) : [];
 	} catch {
 		return [];
 	}
 }
-function YG() {
+function QG() {
 	let e = [], t = [new URLSearchParams(window.location.search), new URLSearchParams(window.location.hash.replace(/^#/, ""))];
 	for (let n of t) {
-		let t = n.get(jG), r = n.get(AG);
-		t && e.push(...WG[t] ?? []), r && e.push(...XG(r));
+		let t = n.get(PG), r = n.get(NG);
+		t && e.push(...qG[t] ?? []), r && e.push(...$G(r));
 	}
-	return window.location.href.includes("wfrp4eCustomizerShapePreset=npc-builder") && !e.length && e.push(...WG["npc-builder"] ?? []), e;
+	return window.location.href.includes("wfrp4eCustomizerShapePreset=npc-builder") && !e.length && e.push(...qG["npc-builder"] ?? []), e;
 }
-function XG(e) {
+function $G(e) {
 	try {
 		let t = JSON.parse(decodeURIComponent(e));
-		return Array.isArray(t) ? t.filter(ZG) : [];
+		return Array.isArray(t) ? t.filter(eK) : [];
 	} catch (e) {
 		return t(`${$} | Could not parse URL shape probes.`, e), [];
 	}
 }
-function ZG(e) {
+function eK(e) {
 	return typeof e != "object" || !e ? !1 : "path" in e && typeof e.path == "string";
 }
 //#endregion
 //#region src/module/debug/shape-inspector/summary.ts
-function QG(e, t) {
-	return !NG(e) && typeof e != "function" ? rK(e) : typeof e == "function" ? tK(e) : Array.isArray(e) ? $G(e, t) : e instanceof Map ? eK(e, t) : nK(e, t);
+function tK(e, t) {
+	return !IG(e) && typeof e != "function" ? oK(e) : typeof e == "function" ? iK(e) : Array.isArray(e) ? nK(e, t) : e instanceof Map ? rK(e, t) : aK(e, t);
 }
-function $G(e, t) {
+function nK(e, t) {
 	return {
 		length: e.length,
-		sample: e.slice(0, t.maxEntries).map((e) => QG(e, aK(t))),
+		sample: e.slice(0, t.maxEntries).map((e) => tK(e, cK(t))),
 		type: "array"
 	};
 }
-function eK(e, t) {
+function rK(e, t) {
 	return {
 		sample: [...e.entries()].slice(0, t.maxEntries).map(([e, n]) => ({
-			key: QG(e, aK(t)),
-			value: QG(n, aK(t))
+			key: tK(e, cK(t)),
+			value: tK(n, cK(t))
 		})),
 		size: e.size,
 		type: "Map"
 	};
 }
-function tK(e) {
+function iK(e) {
 	return {
 		name: e.name,
 		type: "function"
 	};
 }
-function nK(e, t) {
+function aK(e, t) {
 	if (t.seen.has(e)) return { type: "circular" };
 	t.seen.add(e);
-	let n = iK(e, t.maxEntries), r = LG(e, "constructor"), i = {
+	let n = sK(e, t.maxEntries), r = BG(e, "constructor"), i = {
 		constructor: typeof r == "function" && r.name ? r.name : "Object",
 		keys: n,
 		type: "object"
@@ -22451,16 +22463,16 @@ function nK(e, t) {
 		"type",
 		"uuid"
 	]) {
-		let n = LG(e, t);
+		let n = BG(e, t);
 		typeof n == "string" && (i[t] = n);
 	}
 	if (t.maxDepth <= 0) return i;
 	let a = {};
-	for (let r of n) a[r] = QG(LG(e, r), aK(t));
+	for (let r of n) a[r] = tK(BG(e, r), cK(t));
 	i.properties = a;
-	let o = LG(e, "toObject");
+	let o = BG(e, "toObject");
 	if (typeof o == "function") try {
-		i.source = QG(o.call(e), aK(t));
+		i.source = tK(o.call(e), cK(t));
 	} catch (e) {
 		i.source = {
 			error: e instanceof Error ? e.message : String(e),
@@ -22469,7 +22481,7 @@ function nK(e, t) {
 	}
 	return i;
 }
-function rK(e) {
+function oK(e) {
 	if (typeof e == "string") {
 		let t = e.length > 120 ? `${e.slice(0, 120)}...` : e;
 		return {
@@ -22483,10 +22495,10 @@ function rK(e) {
 		value: e
 	};
 }
-function iK(e, t) {
+function sK(e, t) {
 	return Object.keys(e).sort().slice(0, t);
 }
-function aK(e) {
+function cK(e) {
 	return {
 		maxDepth: e.maxDepth - 1,
 		maxEntries: e.maxEntries,
@@ -22495,42 +22507,42 @@ function aK(e) {
 }
 //#endregion
 //#region src/module/debug/shape-inspector/index.ts
-function oK() {
-	localStorage.removeItem(kG), e(`${$} | Cleared debug shape probes.`);
-}
-function sK() {
-	return qG();
-}
-function cK(e, t = {}) {
-	let n = dK(e, t);
-	return pK(n), n;
-}
 function lK() {
-	let t = qG();
+	localStorage.removeItem(MG), e(`${$} | Cleared debug shape probes.`);
+}
+function uK() {
+	return XG();
+}
+function dK(e, t = {}) {
+	let n = mK(e, t);
+	return gK(n), n;
+}
+function fK() {
+	let t = XG();
 	for (let e of ["init", "setup"]) {
 		let n = t.filter((t) => t.hook === e);
 		n.length && Hooks.once(e, () => {
-			for (let t of n) fK(t, e);
+			for (let t of n) hK(t, e);
 		});
 	}
 	Hooks.once("ready", () => {
-		let t = qG().filter((e) => (e.hook ?? "ready") === "ready");
-		GG() && e(`${$} | Debug shape ready probes discovered: ${t.length}`, window.location.href);
-		for (let e of t) fK(e, "ready");
+		let t = XG().filter((e) => (e.hook ?? "ready") === "ready");
+		JG() && e(`${$} | Debug shape ready probes discovered: ${t.length}`, window.location.href);
+		for (let e of t) hK(e, "ready");
 	});
 }
-function uK(t) {
-	let n = t.map(KG);
-	localStorage.setItem(kG, JSON.stringify(n)), e(`${$} | Stored ${n.length} debug shape probe(s). Reload Foundry to run init/setup probes.`);
+function pK(t) {
+	let n = t.map(YG);
+	localStorage.setItem(MG, JSON.stringify(n)), e(`${$} | Stored ${n.length} debug shape probe(s). Reload Foundry to run init/setup probes.`);
 }
-function dK(e, t = {}, n) {
-	let r = MG(t.maxDepth, 2, 6), i = MG(t.maxEntries, 12, 60), a = IG(e), o = {
+function mK(e, t = {}, n) {
+	let r = FG(t.maxDepth, 2, 6), i = FG(t.maxEntries, 12, 60), a = zG(e), o = {
 		inspectedAt: (/* @__PURE__ */ new Date()).toISOString(),
 		label: t.label || e,
 		maxDepth: r,
 		maxEntries: i,
 		path: e,
-		value: QG(a, {
+		value: tK(a, {
 			maxDepth: r,
 			maxEntries: i,
 			seen: /* @__PURE__ */ new WeakSet()
@@ -22538,22 +22550,22 @@ function dK(e, t = {}, n) {
 	};
 	return n && (o.hook = n), o;
 }
-function fK(e, n) {
+function hK(e, n) {
 	try {
-		pK(dK(e.path, e, n));
+		gK(mK(e.path, e, n));
 	} catch (n) {
 		t(`${$} | Debug shape probe failed for "${e.path}".`, n);
 	}
 }
-function pK(t) {
+function gK(t) {
 	e(`${$} | Debug shape probe: ${t.label}`, JSON.stringify(t, null, 2));
 }
 //#endregion
 //#region src/view/components/ApplicationShell.vue?vue&type=script&setup=true&lang.ts
-var mK = ["aria-label"], hK = { class: "dui-card-body" }, gK = { class: "dui-card-title" }, _K = { key: 0 }, vK = {
+var _K = ["aria-label"], vK = { class: "dui-card-body" }, yK = { class: "dui-card-title" }, bK = { key: 0 }, xK = {
 	key: 0,
 	class: "dui-card-actions"
-}, yK = /* @__PURE__ */ P({
+}, SK = /* @__PURE__ */ P({
 	__name: "ApplicationShell",
 	props: {
 		description: {},
@@ -22563,17 +22575,17 @@ var mK = ["aria-label"], hK = { class: "dui-card-body" }, gK = { class: "dui-car
 		return (t, n) => (L(), R("section", {
 			"aria-label": e.title,
 			class: "dui-card"
-		}, [B("div", hK, [
+		}, [B("div", vK, [
 			B("header", null, [
-				B("h1", gK, k(e.title), 1),
-				e.description ? (L(), R("p", _K, k(e.description), 1)) : U("", !0),
+				B("h1", yK, k(e.title), 1),
+				e.description ? (L(), R("p", bK, k(e.description), 1)) : U("", !0),
 				Ur(t.$slots, "header")
 			]),
 			Ur(t.$slots, "default"),
-			t.$slots.actions ? (L(), R("div", vK, [Ur(t.$slots, "actions")])) : U("", !0)
-		])], 8, mK));
+			t.$slots.actions ? (L(), R("div", xK, [Ur(t.$slots, "actions")])) : U("", !0)
+		])], 8, _K));
 	}
-}), bK = { class: "dui-list" }, xK = /* @__PURE__ */ P({
+}), CK = { class: "dui-list" }, wK = /* @__PURE__ */ P({
 	__name: "DaisyExampleApp",
 	setup(e) {
 		let t = [
@@ -22582,20 +22594,20 @@ var mK = ["aria-label"], hK = { class: "dui-card-body" }, gK = { class: "dui-car
 			"card",
 			"alert"
 		];
-		return (e, n) => (L(), z(yK, {
+		return (e, n) => (L(), z(SK, {
 			description: "A quick visual check of the module's isolated Daisy component theme.",
 			title: "Daisy Probe"
 		}, {
 			header: N(() => [...n[0] ||= [B("span", { class: "dui-badge dui-badge-primary" }, "Scoped", -1), B("span", { class: "dui-badge dui-badge-outline" }, "Foundry-safe", -1)]]),
 			actions: N(() => [...n[1] ||= [B("span", { class: "dui-badge dui-badge-success" }, "Ready", -1)]]),
-			default: N(() => [n[2] ||= B("div", { class: "dui-alert dui-alert-info" }, [B("span", null, "DaisyUI is available inside this Vue application root.")], -1), B("ul", bK, [(L(), R(I, null, F(t, (e) => B("li", {
+			default: N(() => [n[2] ||= B("div", { class: "dui-alert dui-alert-info" }, [B("span", null, "DaisyUI is available inside this Vue application root.")], -1), B("ul", CK, [(L(), R(I, null, F(t, (e) => B("li", {
 				key: e,
 				class: "dui-list-row"
 			}, k(e), 1)), 64))])]),
 			_: 1
 		}));
 	}
-}), SK = class extends Nw {
+}), TK = class extends Nw {
 	static DEFAULT_OPTIONS = {
 		...super.DEFAULT_OPTIONS,
 		id: `${$}-daisy-example`,
@@ -22610,9 +22622,9 @@ var mK = ["aria-label"], hK = { class: "dui-card-body" }, gK = { class: "dui-car
 		}
 	};
 	getVueComponent() {
-		return xK;
+		return wK;
 	}
-}, CK = { class: "dui-list" }, wK = { class: "dui-list-row" }, TK = { class: "dui-list-row" }, EK = { class: "dui-list-row" }, DK = /* @__PURE__ */ P({
+}, EK = { class: "dui-list" }, DK = { class: "dui-list-row" }, OK = { class: "dui-list-row" }, kK = { class: "dui-list-row" }, AK = /* @__PURE__ */ P({
 	__name: "WorkbenchApp",
 	props: {
 		openDaisyProbe: { type: Function },
@@ -22620,24 +22632,24 @@ var mK = ["aria-label"], hK = { class: "dui-card-body" }, gK = { class: "dui-car
 		openSpeciesBuilder: { type: Function }
 	},
 	setup(e) {
-		return (t, n) => (L(), z(yK, {
+		return (t, n) => (L(), z(SK, {
 			description: "Open a focused WFRP4e authoring workflow.",
 			title: "Customizer Workbench"
 		}, {
-			default: N(() => [B("ul", CK, [
-				B("li", wK, [n[3] ||= B("div", { class: "dui-list-col-grow" }, [B("strong", null, "NPC Builder"), B("p", null, "Build an NPC from a base Actor, Careers, traits, trappings, and spells.")], -1), B("button", {
+			default: N(() => [B("ul", EK, [
+				B("li", DK, [n[3] ||= B("div", { class: "dui-list-col-grow" }, [B("strong", null, "NPC Builder"), B("p", null, "Build an NPC from a base Actor, Careers, traits, trappings, and spells.")], -1), B("button", {
 					"aria-label": "Open NPC Builder",
 					class: "dui-btn dui-btn-primary",
 					type: "button",
 					onClick: n[0] ||= (...t) => e.openNpcBuilder && e.openNpcBuilder(...t)
 				}, " Open ")]),
-				B("li", TK, [n[4] ||= B("div", { class: "dui-list-col-grow" }, [B("strong", null, "Species Builder"), B("p", null, "Author custom species and apply them to WFRP character generation.")], -1), B("button", {
+				B("li", OK, [n[4] ||= B("div", { class: "dui-list-col-grow" }, [B("strong", null, "Species Builder"), B("p", null, "Author custom species and apply them to WFRP character generation.")], -1), B("button", {
 					"aria-label": "Open Species Builder",
 					class: "dui-btn",
 					type: "button",
 					onClick: n[1] ||= (...t) => e.openSpeciesBuilder && e.openSpeciesBuilder(...t)
 				}, " Open ")]),
-				B("li", EK, [n[5] ||= B("div", { class: "dui-list-col-grow" }, [B("strong", null, "DaisyUI Probe"), B("p", null, "Check the module's scoped component theme.")], -1), B("button", {
+				B("li", kK, [n[5] ||= B("div", { class: "dui-list-col-grow" }, [B("strong", null, "DaisyUI Probe"), B("p", null, "Check the module's scoped component theme.")], -1), B("button", {
 					"aria-label": "Open DaisyUI Probe",
 					class: "dui-btn dui-btn-ghost",
 					type: "button",
@@ -22647,7 +22659,7 @@ var mK = ["aria-label"], hK = { class: "dui-card-body" }, gK = { class: "dui-car
 			_: 1
 		}));
 	}
-}), OK = class extends Nw {
+}), jK = class extends Nw {
 	static DEFAULT_OPTIONS = {
 		...super.DEFAULT_OPTIONS,
 		id: `${$}-workbench`,
@@ -22662,11 +22674,11 @@ var mK = ["aria-label"], hK = { class: "dui-card-body" }, gK = { class: "dui-car
 		}
 	};
 	getVueComponent() {
-		return DK;
+		return AK;
 	}
 	getVueProps() {
 		return {
-			openDaisyProbe: () => new SK().render(!0),
+			openDaisyProbe: () => new TK().render(!0),
 			openNpcBuilder: () => new vW().render(!0),
 			openSpeciesBuilder: () => new _O().render(!0)
 		};
@@ -22674,14 +22686,14 @@ var mK = ["aria-label"], hK = { class: "dui-card-body" }, gK = { class: "dui-car
 };
 //#endregion
 //#region src/module/register-module-menus.ts
-function kK() {
+function MK() {
 	game.settings.registerMenu($, "workbench", {
 		hint: `Open the ${yw} workbench.`,
 		icon: "fa-solid fa-screwdriver-wrench",
 		label: "Open Workbench",
 		name: yw,
 		restricted: !0,
-		type: OK
+		type: jK
 	}), game.settings.registerMenu($, "npc-builder", {
 		hint: "Build a WFRP4e NPC from a base Actor and Career items.",
 		icon: "fa-solid fa-user-plus",
@@ -22702,31 +22714,31 @@ function kK() {
 		label: "Open Daisy Probe",
 		name: "WFRP4e Daisy Probe",
 		restricted: !0,
-		type: SK
+		type: TK
 	});
 }
 //#endregion
 //#region src/module/register-module-settings.ts
-function AK() {
+function NK() {
 	gV(), Jw();
 }
 //#endregion
 //#region src/functions/item-grants/wfrp-grant-effect.ts
-var jK = "generatedGrantItemsEffect", MK = {
+var PK = "generatedGrantItemsEffect", FK = {
 	grantMode: "all",
 	lifetime: "linked-to-effect",
 	ownerAction: "keep"
 };
-function NK(e) {
-	let t = e.recipe ?? MK;
-	PK(t);
+function IK(e) {
+	let t = e.recipe ?? FK;
+	LK(t);
 	let n = e.items.map((e) => e.uuid);
 	return {
 		changes: [],
-		description: IK(e.effectName, e.items, t),
+		description: zK(e.effectName, e.items, t),
 		disabled: !1,
 		flags: { [e.flagScope]: {
-			[jK]: !0,
+			[PK]: !0,
 			itemUuids: n,
 			recipe: t
 		} },
@@ -22735,7 +22747,7 @@ function NK(e) {
 		system: {
 			scriptData: [{
 				label: e.effectName,
-				script: FK(n, t),
+				script: RK(n, t),
 				trigger: "addItems"
 			}],
 			transferData: {
@@ -22746,10 +22758,10 @@ function NK(e) {
 		transfer: !0
 	};
 }
-function PK(e) {
+function LK(e) {
 	if (e.lifetime === "linked-to-effect" && e.ownerAction === "delete-after-grant") throw Error("Self-removing grant effects must create detached item copies.");
 }
-function FK(e, t) {
+function RK(e, t) {
 	let n = t.lifetime === "linked-to-effect" ? "{ fromEffect: this.effect.id }" : "{}", r = t.ownerAction === "delete-after-grant" ? [
 		"",
 		"if (this.item) {",
@@ -22785,19 +22797,19 @@ function FK(e, t) {
 		...r
 	].join("\n");
 }
-function IK(e, t, n) {
-	let r = LK(e), i = t.map((e) => `<li>${LK(e.name)}</li>`).join("");
+function zK(e, t, n) {
+	let r = BK(e), i = t.map((e) => `<li>${BK(e.name)}</li>`).join("");
 	return `<p><strong>${r}</strong>: grants item copies; ${n.lifetime === "linked-to-effect" ? "granted item copies are removed with this effect" : "granted item copies remain after this effect is removed"}.${n.ownerAction === "delete-after-grant" ? " The source Item removes itself after granting." : ""}</p><ul>${i}</ul>`;
 }
-function LK(e) {
+function BK(e) {
 	return e.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 }
 //#endregion
 //#region src/view/apps/grant-builder/GrantBuilderApp.vue?vue&type=script&setup=true&lang.ts
-var RK = { class: "dui-card dui-card-border dui-card-sm" }, zK = { class: "dui-card-body" }, BK = { class: "dui-list" }, VK = {
+var VK = { class: "dui-card dui-card-border dui-card-sm" }, HK = { class: "dui-card-body" }, UK = { class: "dui-list" }, WK = {
 	key: 0,
 	class: "dui-list-row"
-}, HK = ["src"], UK = { class: "dui-list-col-grow" }, WK = ["title", "onClick"], GK = { class: "dui-card dui-card-border dui-card-sm" }, KK = { class: "dui-card-body" }, qK = { class: "dui-fieldset" }, JK = { class: "dui-label" }, YK = ["value"], XK = { class: "dui-card-body" }, ZK = { class: "dui-fieldset" }, QK = { class: "dui-label" }, $K = ["checked"], eq = { class: "dui-label" }, tq = ["checked"], nq = { class: "dui-label" }, rq = ["checked", "disabled"], iq = ["disabled"], aq = /* @__PURE__ */ P({
+}, GK = ["src"], KK = { class: "dui-list-col-grow" }, qK = ["title", "onClick"], JK = { class: "dui-card dui-card-border dui-card-sm" }, YK = { class: "dui-card-body" }, XK = { class: "dui-fieldset" }, ZK = { class: "dui-label" }, QK = ["value"], $K = { class: "dui-card-body" }, eq = { class: "dui-fieldset" }, tq = { class: "dui-label" }, nq = ["checked"], rq = { class: "dui-label" }, iq = ["checked"], aq = { class: "dui-label" }, oq = ["checked", "disabled"], sq = ["disabled"], cq = /* @__PURE__ */ P({
 	__name: "GrantBuilderApp",
 	props: {
 		carrierName: {},
@@ -22817,7 +22829,7 @@ var RK = { class: "dui-card dui-card-border dui-card-sm" }, zK = { class: "dui-c
 		function t(e) {
 			return e.target instanceof HTMLInputElement ? e.target.value : "";
 		}
-		return (n, r) => (L(), z(yK, {
+		return (n, r) => (L(), z(SK, {
 			description: `Build an item-granting Active Effect on ${e.carrierName}.`,
 			title: "Grant Builder"
 		}, {
@@ -22830,9 +22842,9 @@ var RK = { class: "dui-card dui-card-border dui-card-sm" }, zK = { class: "dui-c
 				type: "button",
 				disabled: e.items.length === 0,
 				onClick: r[6] ||= (...t) => e.onCreate && e.onCreate(...t)
-			}, " Create Grant Effect ", 8, iq)]),
+			}, " Create Grant Effect ", 8, sq)]),
 			default: N(() => [
-				B("section", RK, [B("div", zK, [
+				B("section", VK, [B("div", HK, [
 					r[8] ||= B("h2", { class: "dui-card-title" }, "Granted Items", -1),
 					V(fy, {
 						description: "World and compendium Items can be added one at a time.",
@@ -22840,7 +22852,7 @@ var RK = { class: "dui-card dui-card-border dui-card-sm" }, zK = { class: "dui-c
 						title: "Drop Items Here",
 						onDropData: e.onDropData
 					}, null, 8, ["onDropData"]),
-					B("ul", BK, [e.items.length === 0 ? (L(), R("li", VK, "No granted items configured.")) : (L(!0), R(I, { key: 1 }, F(e.items, (t) => (L(), R("li", {
+					B("ul", UK, [e.items.length === 0 ? (L(), R("li", WK, "No granted items configured.")) : (L(!0), R(I, { key: 1 }, F(e.items, (t) => (L(), R("li", {
 						key: t.uuid,
 						class: "dui-list-row"
 					}, [
@@ -22848,8 +22860,8 @@ var RK = { class: "dui-card dui-card-border dui-card-sm" }, zK = { class: "dui-c
 							key: 0,
 							alt: "",
 							src: t.img
-						}, null, 8, HK)) : U("", !0),
-						B("div", UK, [B("strong", null, k(t.name), 1), B("small", null, k(t.uuid), 1)]),
+						}, null, 8, GK)) : U("", !0),
+						B("div", KK, [B("strong", null, k(t.name), 1), B("small", null, k(t.uuid), 1)]),
 						B("button", {
 							class: "dui-btn dui-btn-ghost dui-btn-sm dui-btn-square",
 							type: "button",
@@ -22858,51 +22870,51 @@ var RK = { class: "dui-card dui-card-border dui-card-sm" }, zK = { class: "dui-c
 						}, [...r[7] ||= [B("i", {
 							class: "fa-solid fa-times",
 							"aria-hidden": "true"
-						}, null, -1)]], 8, WK)
+						}, null, -1)]], 8, qK)
 					]))), 128))])
 				])]),
-				B("section", GK, [B("div", KK, [B("fieldset", qK, [r[10] ||= B("legend", { class: "dui-fieldset-legend" }, "Effect", -1), B("label", JK, [r[9] ||= B("span", null, "Effect name", -1), B("input", {
+				B("section", JK, [B("div", YK, [B("fieldset", XK, [r[10] ||= B("legend", { class: "dui-fieldset-legend" }, "Effect", -1), B("label", ZK, [r[9] ||= B("span", null, "Effect name", -1), B("input", {
 					class: "dui-input",
 					value: e.effectName,
 					type: "text",
 					onInput: r[0] ||= (n) => e.onEffectNameInput(t(n))
-				}, null, 40, YK)])])])]),
+				}, null, 40, QK)])])])]),
 				B("form", {
 					class: "dui-card dui-card-border dui-card-sm",
 					onSubmit: r[4] ||= Yo(() => {}, ["prevent"])
-				}, [B("div", XK, [B("fieldset", ZK, [
+				}, [B("div", $K, [B("fieldset", eq, [
 					r[14] ||= B("legend", { class: "dui-fieldset-legend" }, "Granted Item Lifetime", -1),
-					B("label", QK, [B("input", {
+					B("label", tq, [B("input", {
 						class: "dui-radio",
 						name: "grant-lifetime",
 						type: "radio",
 						value: "linked-to-effect",
 						checked: e.lifetime === "linked-to-effect",
 						onChange: r[1] ||= (t) => e.onLifetimeChange("linked-to-effect")
-					}, null, 40, $K), r[11] ||= B("span", null, [
+					}, null, 40, nq), r[11] ||= B("span", null, [
 						B("strong", null, "Linked to this effect"),
 						B("br"),
 						H(" Granted Items are removed when this effect is deleted. ")
 					], -1)]),
-					B("label", eq, [B("input", {
+					B("label", rq, [B("input", {
 						class: "dui-radio",
 						name: "grant-lifetime",
 						type: "radio",
 						value: "detached",
 						checked: e.lifetime === "detached",
 						onChange: r[2] ||= (t) => e.onLifetimeChange("detached")
-					}, null, 40, tq), r[12] ||= B("span", null, [
+					}, null, 40, iq), r[12] ||= B("span", null, [
 						B("strong", null, "Detached copies"),
 						B("br"),
 						H(" Granted Items remain after this effect or source Item is removed. ")
 					], -1)]),
-					B("label", nq, [B("input", {
+					B("label", aq, [B("input", {
 						class: "dui-checkbox",
 						type: "checkbox",
 						checked: e.ownerAction === "delete-after-grant",
 						disabled: e.lifetime !== "detached",
 						onChange: r[3] ||= (t) => e.onOwnerActionChange(e.ownerAction === "delete-after-grant" ? "keep" : "delete-after-grant")
-					}, null, 40, rq), r[13] ||= H(" Remove the source Item after granting. ", -1)])
+					}, null, 40, oq), r[13] ||= H(" Remove the source Item after granting. ", -1)])
 				])])], 32)
 			]),
 			_: 1
@@ -22911,7 +22923,7 @@ var RK = { class: "dui-card dui-card-border dui-card-sm" }, zK = { class: "dui-c
 });
 //#endregion
 //#region src/module/wfrp4e/grant/item-documents.ts
-function oq(e) {
+function lq(e) {
 	let t = e.dataTransfer?.getData("text/plain") ?? "";
 	if (!t) return null;
 	try {
@@ -22920,12 +22932,12 @@ function oq(e) {
 		return null;
 	}
 }
-async function sq(e) {
+async function uq(e) {
 	let t = sE(e);
 	if (!t.uuid) throw Error("Drop an Item with a resolvable UUID.");
 	return aE(await fromUuid(t.uuid), "The dropped Item was not found.");
 }
-function cq(e) {
+function dq(e) {
 	let t = {
 		name: e.name,
 		uuid: e.uuid
@@ -22934,7 +22946,7 @@ function cq(e) {
 }
 //#endregion
 //#region src/module/apps/grant-builder/GrantBuilderApplication.ts
-var lq = "detached", uq = class extends Nw {
+var fq = "detached", pq = class extends Nw {
 	static DEFAULT_OPTIONS = {
 		...super.DEFAULT_OPTIONS,
 		classes: [$, "wfrp4e-customizer-grant-builder"],
@@ -22959,7 +22971,7 @@ var lq = "detached", uq = class extends Nw {
 		super(), this.carrierItem = e;
 	}
 	getVueComponent() {
-		return aq;
+		return cq;
 	}
 	getVueProps() {
 		return {
@@ -22980,7 +22992,7 @@ var lq = "detached", uq = class extends Nw {
 		};
 	}
 	changeLifetime(e) {
-		this.#r = e, e !== lq && (this.#i = "keep"), this.render();
+		this.#r = e, e !== fq && (this.#i = "keep"), this.render();
 	}
 	changeOwnerAction(e) {
 		this.#i = e, this.render();
@@ -22990,13 +23002,13 @@ var lq = "detached", uq = class extends Nw {
 	}
 	async handleDrop(e) {
 		try {
-			let t = await sq(e);
+			let t = await uq(e);
 			if (t.uuid === this.carrierItem.uuid) throw Error("An Item cannot grant itself.");
 			if (this.#n.some((e) => e.uuid === t.uuid)) {
 				ui.notifications?.warn?.(`"${t.name}" is already in this grant effect.`);
 				return;
 			}
-			this.#n = [...this.#n, cq(t)], this.updateDefaultEffectName(), this.render();
+			this.#n = [...this.#n, dq(t)], this.updateDefaultEffectName(), this.render();
 		} catch (e) {
 			let t = e instanceof Error ? e.message : "The dropped Item could not be converted.";
 			ui.notifications?.warn?.(t);
@@ -23026,7 +23038,7 @@ var lq = "detached", uq = class extends Nw {
 				grantMode: "all",
 				lifetime: this.#r,
 				ownerAction: this.#i
-			}, n = NK({
+			}, n = IK({
 				effectName: e,
 				flagScope: $,
 				items: this.#n,
@@ -23038,51 +23050,51 @@ var lq = "detached", uq = class extends Nw {
 			ui.notifications?.warn?.(t);
 		}
 	}
-}, dq = new Set(["talent", "trait"]), fq = /* @__PURE__ */ new WeakSet(), pq = !1, mq = "wfrp4e-customizer-grant-builder-button", hq = [
+}, mq = new Set(["talent", "trait"]), hq = /* @__PURE__ */ new WeakSet(), gq = !1, _q = "wfrp4e-customizer-grant-builder-button", vq = [
 	"section[data-application-part=\"effects\"].active",
 	"section[data-tab=\"effects\"].active",
 	".tab[data-tab=\"effects\"].active",
 	".tab.effects.active"
-].join(","), gq = [
+].join(","), yq = [
 	"section[data-application-part=\"effects\"]",
 	"section[data-tab=\"effects\"]",
 	".tab[data-tab=\"effects\"]",
 	".tab.effects"
 ].join(",");
-function _q() {
-	pq || (pq = !0, Hooks.on("renderApplicationV2", (e, t) => {
+function bq() {
+	gq || (gq = !0, Hooks.on("renderApplicationV2", (e, t) => {
 		if (!(t instanceof HTMLElement)) return;
-		let n = xq(e);
-		!n || !dq.has(n.type) || (vq(n, t), yq(n, t));
+		let n = wq(e);
+		!n || !mq.has(n.type) || (xq(n, t), Sq(n, t));
 	}));
 }
-function vq(e, t) {
-	fq.has(t) || (fq.add(t), t.addEventListener("dragover", (e) => {
-		Sq(t, e.target) && (e.preventDefault(), e.dataTransfer && (e.dataTransfer.dropEffect = "copy"));
+function xq(e, t) {
+	hq.has(t) || (hq.add(t), t.addEventListener("dragover", (e) => {
+		Tq(t, e.target) && (e.preventDefault(), e.dataTransfer && (e.dataTransfer.dropEffect = "copy"));
 	}, !0), t.addEventListener("drop", (n) => {
-		bq(e, t, n);
+		Cq(e, t, n);
 	}, !0));
 }
-function yq(e, t) {
-	if (t.querySelector(`.${mq}`)) return;
-	let n = wq(t, { includeInactive: !0 });
+function Sq(e, t) {
+	if (t.querySelector(`.${_q}`)) return;
+	let n = Dq(t, { includeInactive: !0 });
 	if (!n) return;
 	let r = document.createElement("div");
 	r.classList.add("wfrp4e-customizer-grant-builder-toolbar");
 	let i = document.createElement("button");
-	i.type = "button", i.classList.add(mq), i.title = "Open the advanced item grant builder", i.innerHTML = "<i class=\"fa-solid fa-sitemap\" aria-hidden=\"true\"></i><span>Grant Builder</span>", i.addEventListener("click", () => {
-		new uq(e).render(!0);
+	i.type = "button", i.classList.add(_q), i.title = "Open the advanced item grant builder", i.innerHTML = "<i class=\"fa-solid fa-sitemap\" aria-hidden=\"true\"></i><span>Grant Builder</span>", i.addEventListener("click", () => {
+		new pq(e).render(!0);
 	}), r.append(i), n.prepend(r);
 }
-async function bq(e, t, n) {
-	if (!Sq(t, n.target)) return;
-	let r = oq(n);
+async function Cq(e, t, n) {
+	if (!Tq(t, n.target)) return;
+	let r = lq(n);
 	if (r) {
 		n.preventDefault(), n.stopPropagation();
 		try {
-			let t = await sq(r);
+			let t = await uq(r);
 			if (t.uuid === e.uuid) throw Error("An Item cannot grant itself.");
-			let n = cq(t), i = NK({
+			let n = dq(t), i = IK({
 				effectName: `Grant ${t.name}`,
 				flagScope: $,
 				items: [n]
@@ -23095,33 +23107,33 @@ async function bq(e, t, n) {
 		}
 	}
 }
-function xq(e) {
+function wq(e) {
 	if (typeof e != "object" || !e) return null;
 	let t = "item" in e ? e.item : void 0;
 	if (rE(t)) return t;
 	let n = "document" in e ? e.document : void 0;
 	return rE(n) ? n : null;
 }
-function Sq(e, t) {
-	return !(t instanceof Element) || !e.contains(t) ? !1 : !!Cq(e);
+function Tq(e, t) {
+	return !(t instanceof Element) || !e.contains(t) ? !1 : !!Eq(e);
 }
-function Cq(e) {
-	return e.querySelector(hq) || wq(e, { includeInactive: !1 });
+function Eq(e) {
+	return e.querySelector(vq) || Dq(e, { includeInactive: !1 });
 }
-function wq(e, t) {
-	return [...e.querySelectorAll(gq)].find((e) => t.includeInactive || e.offsetParent !== null) ?? null;
+function Dq(e, t) {
+	return [...e.querySelectorAll(yq)].find((e) => t.includeInactive || e.offsetParent !== null) ?? null;
 }
 //#endregion
 //#region src/module/api/create-module-api.ts
-function Tq() {
+function Oq() {
 	return {
-		clearDebugShapeProbes: oK,
+		clearDebugShapeProbes: lK,
 		estimateNpcXp: BW,
-		getDebugShapeProbes: sK,
-		inspectPath: cK,
+		getDebugShapeProbes: uK,
+		inspectPath: dK,
 		listNpcAutoAdvanceStrategies: xj,
 		async openDaisyExample() {
-			await new SK().render(!0);
+			await new TK().render(!0);
 		},
 		async openNpcBuilder() {
 			await new vW().render(!0);
@@ -23130,44 +23142,44 @@ function Tq() {
 			await new _O().render(!0);
 		},
 		async openWorkbench() {
-			await new OK().render(!0);
+			await new jK().render(!0);
 		},
 		registerNpcAutoAdvanceStrategy: bj,
-		setDebugShapeProbes: uK
+		setDebugShapeProbes: pK
 	};
 }
 //#endregion
 //#region src/module/api/register-module-api.ts
-function Eq() {
+function kq() {
 	let e = game.modules.get($);
 	if (!e) throw Error(`Foundry module registry entry was not found for ${$}.`);
-	e.api = Tq();
+	e.api = Oq();
 }
 //#endregion
 //#region src/module/hooks/register-module-hooks.ts
-function Dq() {
-	lK(), Hooks.once("init", () => {
-		e(`${$} | Initializing`), AK(), game.system.id === "wfrp4e" && (KT(), tG(), KW(), bG(), _q()), kK(), xW();
+function Aq() {
+	fK(), Hooks.once("init", () => {
+		e(`${$} | Initializing`), NK(), game.system.id === "wfrp4e" && (KT(), tG(), KW(), CG(), bq()), MK(), xW();
 	}), Hooks.once("ready", () => {
 		if (game.system.id !== "wfrp4e") {
 			t(`${$} | Loaded outside ${bw}; skipping module API registration.`);
 			return;
 		}
-		Oq();
+		jq();
 	});
 }
-async function Oq() {
+async function jq() {
 	await Promise.resolve();
 	try {
 		await qT(Yw().definitions.map(({ key: e }) => e)), await nG();
 	} catch (e) {
 		t(`${$} | Runtime species catalog could not be prepared: ${e instanceof Error ? e.message : "Unknown runtime adaptation error."}`);
 	}
-	Eq(), DB(), GB(), ZT(), lO(), e(`${$} | Ready`);
+	kq(), DB(), GB(), ZT(), lO(), e(`${$} | Ready`);
 }
 //#endregion
 //#region src/main.ts
-Dq();
+Aq();
 //#endregion
 
 //# sourceMappingURL=wfrp4e-customizer-apps.mjs.map
